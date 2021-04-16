@@ -20,8 +20,7 @@ public class Printer<I> extends Consumer<I> {
 
     @Override
     protected void onFinish(Throwable throwable) throws Exception {
-        super.onFinish(throwable);
-        ps.println();
         ps.flush();
+        super.onFinish(throwable);
     }
 }

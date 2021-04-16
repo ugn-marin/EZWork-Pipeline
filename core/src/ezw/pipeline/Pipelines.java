@@ -66,14 +66,7 @@ public abstract class Pipelines {
      * @return The supplier.
      */
     public static <O> Supplier<O> supplier(SupplyPipe<O> output, java.util.function.Supplier<O> get) {
-        Objects.requireNonNull(get);
-        return new Supplier<>(output) {
-
-            @Override
-            protected O get() {
-                return get.get();
-            }
-        };
+        return supplier(output, 1, get);
     }
 
     /**
@@ -106,14 +99,7 @@ public abstract class Pipelines {
      */
     public static <I, O> Function<I, O> function(Pipe<I> input, Pipe<O> output,
                                                  java.util.function.Function<I, O> apply) {
-        Objects.requireNonNull(apply);
-        return new Function<>(input, output) {
-
-            @Override
-            protected O apply(I item) {
-                return apply.apply(item);
-            }
-        };
+        return function(input, output, 1, apply);
     }
 
     /**
@@ -143,7 +129,7 @@ public abstract class Pipelines {
      * @param input The input pipe.
      * @param output The output pipe.
      * @param transform The transform implementation.
-     * @param conclude The conclude implementation.
+     * @param conclude The conclude implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
@@ -151,20 +137,7 @@ public abstract class Pipelines {
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output,
                                                        java.util.function.Function<I, Collection<O>> transform,
                                                        java.util.function.Supplier<Collection<O>> conclude) {
-        Objects.requireNonNull(transform);
-        Objects.requireNonNull(conclude);
-        return new Transformer<>(input, output) {
-
-            @Override
-            protected Collection<O> transform(I item) {
-                return transform.apply(item);
-            }
-
-            @Override
-            protected Collection<O> conclude() {
-                return conclude.get();
-            }
-        };
+        return transformer(input, output, 1, transform, conclude);
     }
 
     /**
@@ -173,7 +146,7 @@ public abstract class Pipelines {
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
      * @param transform The transform implementation.
-     * @param conclude The conclude implementation.
+     * @param conclude The conclude implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
@@ -182,7 +155,6 @@ public abstract class Pipelines {
                                                        java.util.function.Function<I, Collection<O>> transform,
                                                        java.util.function.Supplier<Collection<O>> conclude) {
         Objects.requireNonNull(transform);
-        Objects.requireNonNull(conclude);
         return new Transformer<>(input, output, parallel) {
 
             @Override
@@ -192,7 +164,7 @@ public abstract class Pipelines {
 
             @Override
             protected Collection<O> conclude() {
-                return conclude.get();
+                return conclude != null ? conclude.get() : null;
             }
         };
     }
@@ -205,14 +177,7 @@ public abstract class Pipelines {
      * @return The consumer.
      */
     public static <I> Consumer<I> consumer(Pipe<I> input, java.util.function.Consumer<I> accept) {
-        Objects.requireNonNull(accept);
-        return new Consumer<>(input) {
-
-            @Override
-            protected void accept(I item) {
-                accept.accept(item);
-            }
-        };
+        return consumer(input, 1, accept);
     }
 
     /**
