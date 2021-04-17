@@ -31,6 +31,10 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
         modifiedInputs = new HashMap<>(inputs.length);
     }
 
+    Pipe<I>[] getInputs() {
+        return inputs;
+    }
+
     @Override
     public Pipe<I> getOutput() {
         return output;

@@ -29,6 +29,10 @@ public abstract class PipelineWorker implements CallableRunnable {
         return blockingThreadPoolExecutor.getMaximumPoolSize();
     }
 
+    protected String getName() {
+        return String.format("%s[%d]", toString(), getParallel());
+    }
+
     /**
      * Executes the worker until all internal work is done, or an exception thrown.
      * @throws Exception An exception terminating the pipeline.

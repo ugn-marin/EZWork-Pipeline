@@ -42,6 +42,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.supplyPipe = supplyPipe;
     }
 
+    List<PipelineWorker> getPipelineWorkers() {
+        return pipelineWorkers;
+    }
+
     /**
      * Returns the maximum number of auto-allocated threads that this pipeline and its workers may use.
      */

@@ -28,6 +28,10 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
         return input;
     }
 
+    Pipe<I>[] getOutputs() {
+        return outputs;
+    }
+
     @Override
     protected void work() throws InterruptedException {
         for (IndexedItem<I> indexedItem : input) {
