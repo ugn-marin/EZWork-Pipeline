@@ -27,18 +27,9 @@ public class Analyzer {
 
     void analyze() {
         classifyPipelineWorkers();
-        Set<Object> connectionsLeveled = new HashSet<>(pipeline.getPipelineWorkers().size());
         setLevel(pipeline.getPipelineWorkers().stream().findFirst().orElseThrow(), 0);
-        while (levels.size() < pipeline.getPipelineWorkers().size()) {
-            Map.copyOf(levels).entrySet().stream().filter(entry -> !connectionsLeveled.contains(entry.getKey()))
-                    .forEach(entry -> {
-                var pipelineWorker = entry.getKey();
-                var level = entry.getValue();
-                setLevel(pipelineWorker, level);
-                setConnectionsLevel(pipelineWorker, level);
-                connectionsLeveled.add(pipelineWorker);
-            });
-        }
+        if (levels.size() < pipeline.getPipelineWorkers().size())
+            throw new IllegalArgumentException("...");
         for (int i = levels.values().stream().min(Integer::compareTo).orElseThrow();
              i <= levels.values().stream().max(Integer::compareTo).orElseThrow(); i++) {
             System.out.println(i + ": " + levelsAggregation.get(i).stream().map(pw -> ((PipelineWorker) pw).getName())
@@ -63,6 +54,7 @@ public class Analyzer {
         if (!levelsAggregation.get(level).contains(pipelineWorker))
             levelsAggregation.get(level).add(pipelineWorker);
         levels.put(pipelineWorker, level);
+        setConnectionsLevel(pipelineWorker, level);
     }
 
     private void setConnectionsLevel(Object pipelineWorker, int level) {
