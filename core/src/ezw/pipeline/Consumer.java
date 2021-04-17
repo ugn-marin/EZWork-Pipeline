@@ -24,7 +24,7 @@ public abstract class Consumer<I> extends PipelineWorker implements InputCompone
      */
     public Consumer(Pipe<I> input, int parallel) {
         super(parallel);
-        this.input = Objects.requireNonNull(input);
+        this.input = Objects.requireNonNull(input, "Input pipe is required.");
     }
 
     @Override

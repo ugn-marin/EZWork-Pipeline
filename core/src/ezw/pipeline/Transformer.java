@@ -31,8 +31,8 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
      */
     public Transformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
         super(parallel);
-        this.input = Objects.requireNonNull(input);
-        this.output = Objects.requireNonNull(output);
+        this.input = Objects.requireNonNull(input, "Input pipe is required.");
+        this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
 
     @Override

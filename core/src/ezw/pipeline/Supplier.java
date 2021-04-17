@@ -24,7 +24,7 @@ public abstract class Supplier<O> extends PipelineWorker implements SupplyGate<O
      */
     public Supplier(SupplyPipe<O> output, int parallel) {
         super(parallel);
-        this.output = Objects.requireNonNull(output);
+        this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
 
     @Override

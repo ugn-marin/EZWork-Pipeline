@@ -94,7 +94,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder(SupplyPipe<S> supplyPipe) {
-            this.supplyPipe = Objects.requireNonNull(supplyPipe);
+            this.supplyPipe = Objects.requireNonNull(supplyPipe, "Supply pipe cannot be null.");
         }
 
         /**
