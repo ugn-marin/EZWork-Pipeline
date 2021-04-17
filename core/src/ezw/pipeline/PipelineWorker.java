@@ -81,7 +81,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      *          without an exception.
      */
     public void cancel(Throwable t) {
-        setThrowable(Objects.requireNonNull(t));
+        setThrowable(Objects.requireNonNull(t, "Throwable is required."));
         blockingThreadPoolExecutor.shutdown();
         cancellableSubmitter.cancelSubmitted();
     }

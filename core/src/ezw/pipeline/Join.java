@@ -26,7 +26,7 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
         this.inputs = inputs;
-        this.output = Objects.requireNonNull(output);
+        this.output = Objects.requireNonNull(output, "Output pipe is required.");
         remainingInputs = new HashMap<>(inputs.length);
         modifiedInputs = new HashMap<>(inputs.length);
     }

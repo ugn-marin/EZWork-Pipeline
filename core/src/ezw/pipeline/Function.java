@@ -29,8 +29,8 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
      */
     public Function(Pipe<I> input, Pipe<O> output, int parallel) {
         super(parallel);
-        this.input = Objects.requireNonNull(input);
-        this.output = Objects.requireNonNull(output);
+        this.input = Objects.requireNonNull(input, "Input pipe is required.");
+        this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
 
     @Override

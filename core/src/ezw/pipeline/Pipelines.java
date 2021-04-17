@@ -78,7 +78,7 @@ public abstract class Pipelines {
      * @return The supplier.
      */
     public static <O> Supplier<O> supplier(SupplyPipe<O> output, int parallel, java.util.function.Supplier<O> get) {
-        Objects.requireNonNull(get);
+        Objects.requireNonNull(get, "Get supplier is required.");
         return new Supplier<>(output, parallel) {
 
             @Override
@@ -114,7 +114,7 @@ public abstract class Pipelines {
      */
     public static <I, O> Function<I, O> function(Pipe<I> input, Pipe<O> output, int parallel,
                                                  java.util.function.Function<I, O> apply) {
-        Objects.requireNonNull(apply);
+        Objects.requireNonNull(apply, "Apply function is required.");
         return new Function<>(input, output, parallel) {
 
             @Override
@@ -154,7 +154,7 @@ public abstract class Pipelines {
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output, int parallel,
                                                        java.util.function.Function<I, Collection<O>> transform,
                                                        java.util.function.Supplier<Collection<O>> conclude) {
-        Objects.requireNonNull(transform);
+        Objects.requireNonNull(transform, "Transform function is required.");
         return new Transformer<>(input, output, parallel) {
 
             @Override
@@ -189,7 +189,7 @@ public abstract class Pipelines {
      * @return The consumer.
      */
     public static <I> Consumer<I> consumer(Pipe<I> input, int parallel, java.util.function.Consumer<I> accept) {
-        Objects.requireNonNull(accept);
+        Objects.requireNonNull(accept, "Accept consumer is required.");
         return new Consumer<>(input, parallel) {
 
             @Override

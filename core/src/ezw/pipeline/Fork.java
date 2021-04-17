@@ -19,7 +19,7 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
         Arrays.stream(outputs).forEach(Objects::requireNonNull);
         if (outputs.length < 2)
             throw new IllegalArgumentException("Fork requires at least 2 output pipes.");
-        this.input = Objects.requireNonNull(input);
+        this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.outputs = outputs;
     }
 
