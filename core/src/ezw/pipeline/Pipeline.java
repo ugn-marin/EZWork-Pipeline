@@ -80,6 +80,18 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         supplyPipe.setEndOfInput();
     }
 
+    @Override
+    public String toString() {
+        String string = String.format("Pipeline of %d workers on up to %d threads:\n", pipelineWorkers.size(),
+                getPotentialThreads());
+        try {
+            string += new PipelineChartBuilder(this).call();
+        } catch (UnsupportedOperationException e) {
+            string += e.getMessage();
+        }
+        return string;
+    }
+
     /**
      * A pipeline builder.
      * @param <S> The type of items supplied at the start of the pipeline.

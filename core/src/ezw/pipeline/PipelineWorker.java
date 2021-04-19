@@ -29,10 +29,6 @@ public abstract class PipelineWorker implements CallableRunnable {
         return blockingThreadPoolExecutor.getMaximumPoolSize();
     }
 
-    protected String getName() {
-        return String.format("%s[%d]", toString(), getParallel());
-    }
-
     /**
      * Executes the worker until all internal work is done, or an exception thrown.
      * @throws Exception An exception terminating the pipeline.
@@ -121,6 +117,19 @@ public abstract class PipelineWorker implements CallableRunnable {
         else if (throwable instanceof Exception)
             throw (Exception) throwable;
         throw new Exception(throwable);
+    }
+
+    @Override
+    public String toString() {
+        Class<?> clazz = getClass();
+        String simpleName = clazz.getSimpleName();
+        while (simpleName.isEmpty()) {
+            clazz = clazz.getSuperclass();
+            simpleName = clazz.getSimpleName();
+        }
+        if (getParallel() > 1)
+            simpleName += String.format("[%d]", getParallel());
+        return simpleName;
     }
 
     private static class SilentStop extends Throwable {}

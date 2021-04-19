@@ -19,6 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Pipe<I> implements Iterable<IndexedItem<I>> {
     private static final long POLLING_TIMEOUT = 100;
 
+    protected final int baseCapacity;
     private final PipeIterator iterator = new PipeIterator();
     private final ReentrantLock lock = new ReentrantLock(true);
     private final BlockingQueue<IndexedItem<I>> inOrderQueue;
@@ -35,6 +36,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
      *                     the pipe can reach <code>BC+N</code>.
      */
     public Pipe(int baseCapacity) {
+        this.baseCapacity = baseCapacity;
         inOrderQueue = new ArrayBlockingQueue<>(baseCapacity, true);
         outOfOrderItems = new HashMap<>();
     }
@@ -81,7 +83,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         if (indexedItem == null)
             return;
         if (endOfInput)
-            throw new IllegalStateException("Attempting to push into pipe after end of input.");
+            throw new IllegalStateException("Attempted to push into pipe after end of input.");
         while (true) {
             lock.lock();
             try {
@@ -132,6 +134,11 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
     @Override
     public Iterator<IndexedItem<I>> iterator() {
         return iterator;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("-<%d>-", baseCapacity);
     }
 
     private class PipeIterator implements Iterator<IndexedItem<I>> {

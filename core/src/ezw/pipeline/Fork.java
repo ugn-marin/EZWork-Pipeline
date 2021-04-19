@@ -49,4 +49,9 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
         super.join();
         Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
     }
+
+    @Override
+    public String toString() {
+        return "Fork";
+    }
 }

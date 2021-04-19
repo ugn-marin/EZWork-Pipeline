@@ -40,4 +40,9 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
         push(indexedItem.getItem());
     }
+
+    @Override
+    public String toString() {
+        return String.format("-<S%s:%d>-", predicate != null ? "?" : "", baseCapacity);
+    }
 }

@@ -1,7 +1,5 @@
 package ezw.pipeline;
 
-import ezw.concurrent.Interruptible;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,5 +83,10 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
             }
         }
         output.push(modified != null ? modified : indexedItem);
+    }
+
+    @Override
+    public String toString() {
+        return "Join";
     }
 }
