@@ -51,7 +51,7 @@ public abstract class Supplier<O> extends PipelineWorker implements SupplyGate<O
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }

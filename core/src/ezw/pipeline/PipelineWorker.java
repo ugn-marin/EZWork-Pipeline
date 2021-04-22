@@ -30,8 +30,8 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Executes the worker until all internal work is done, or an exception thrown.
-     * @throws Exception An exception terminating the pipeline.
+     * Executes the worker until all internal work is done, or an exception is thrown.
+     * @throws Exception An exception terminating the pipeline. May come from a worker, or the cancel argument.
      */
     @Override
     public void run() throws Exception {
@@ -93,7 +93,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * Waits for all submitted tasks by shutting the thread pool down and awaiting termination.
      * @throws InterruptedException If interrupted.
      */
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         blockingThreadPoolExecutor.join();
     }
 
@@ -107,7 +107,8 @@ public abstract class PipelineWorker implements CallableRunnable {
      * Runs after all internal work is done.
      * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
      *                  stopped by calling <code>stop</code>.
-     * @throws Exception The throwable if not null.
+     * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, wrapped in a new
+     * Exception otherwise.
      */
     protected void onFinish(Throwable throwable) throws Exception {
         if (throwable == null)

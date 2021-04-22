@@ -47,13 +47,13 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
     }
 
     @Override
     public String toString() {
-        return "Fork";
+        return "fork";
     }
 }

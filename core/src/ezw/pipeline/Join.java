@@ -51,7 +51,7 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }
@@ -88,6 +88,6 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
 
     @Override
     public String toString() {
-        return "Join";
+        return "join";
     }
 }

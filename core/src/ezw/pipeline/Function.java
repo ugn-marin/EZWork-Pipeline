@@ -53,7 +53,7 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }

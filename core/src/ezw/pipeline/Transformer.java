@@ -62,7 +62,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }

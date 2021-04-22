@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
+    private final String toString;
 
     /**
      * Creates a builder of a closed pipeline.
@@ -42,6 +43,15 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         super(pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
+        boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
+        String string = String.format("%s of %d workers on up to %d threads:\n", isOpen ? "Open pipeline" : "Pipeline",
+                pipelineWorkers.size(), getPotentialThreads());
+        try {
+            string += new PipelineChartBuilder(pipelineWorkers).call();
+        } catch (UnsupportedOperationException e) {
+            string += e.getMessage();
+        }
+        toString = string;
     }
 
     /**
@@ -80,14 +90,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     @Override
     public String toString() {
-        String string = String.format("Pipeline of %d workers on up to %d threads:\n", pipelineWorkers.size(),
-                getPotentialThreads());
-        try {
-            string += new PipelineChartBuilder(pipelineWorkers).call();
-        } catch (UnsupportedOperationException e) {
-            string += e.getMessage();
-        }
-        return string;
+        return toString;
     }
 
     /**
