@@ -1,7 +1,6 @@
 package ezw.pipeline;
 
 import ezw.util.Sugar;
-import ezw.util.generic.Tuple;
 
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -109,40 +108,35 @@ class PipelineChartBuilder implements Callable<String> {
         for (int level = minLevel; level <= maxLevel; level++) {
             List<Object> pws = levelsAggregation.get(level);
             pws.sort(Comparator.comparing(Object::toString));
-            List<Tuple<Integer, Integer>> rowSwaps = new ArrayList<>(maxLevelSize / 2);
+            Map<Integer, Integer> rowSwaps = new HashMap<>(maxLevelSize / 2);
             for (int row = 0; row < pws.size(); row++) {
                 Object pw = pws.get(row);
-                Tuple<String, Integer> appendPipeInfo = appendPipes((PipelineWorker) pw, pipeRows, row);
-                String pwStr = appendPipeInfo.getFirst();
+                String pwStr = pw.toString();
+                int newRow = row;
+                Pipe<?> pipe;
+                if (pw instanceof OutputComponent) {
+                    pipe = ((OutputComponent<?>) pw).getOutput();
+                    if (!pipeRows.containsKey(pipe))
+                        pwStr = String.format("%s -%s", pwStr, pipe);
+                    setPipeRow(pipe, pipeRows, row);
+                }
+                if (pw instanceof InputComponent) {
+                    pipe = ((InputComponent<?>) pw).getInput();
+                    if (!pipeRows.containsKey(pipe))
+                        pwStr = String.format("%s- %s", pipe, pwStr);
+                    else
+                        pwStr = String.format("-- %s", pwStr);
+                    newRow = setPipeRow(pipe, pipeRows, row);
+                }
                 if (pwStr.length() > levelsLength[level - minLevel])
                     levelsLength[level - minLevel] = pwStr.length();
-                if (appendPipeInfo.getSecond() != row)
-                    rowSwaps.add(new Tuple<>(appendPipeInfo.getSecond(), row));
+                if (newRow != row)
+                    rowSwaps.put(newRow, row);
                 chartMatrix[level - minLevel][row] = pw;
                 toString.put(pw, pwStr);
             }
             doLevelSwaps(level, rowSwaps);
         }
-    }
-
-    private Tuple<String, Integer> appendPipes(PipelineWorker pw, Map<Pipe<?>, Integer> pipeRows, Integer row) {
-        String pwStr = pw.toString();
-        Pipe<?> pipe;
-        if (pw instanceof OutputComponent) {
-            pipe = ((OutputComponent<?>) pw).getOutput();
-            if (!pipeRows.containsKey(pipe))
-                pwStr = String.format("%s -%s", pwStr, pipe);
-            setPipeRow(pipe, pipeRows, row);
-        }
-        if (pw instanceof InputComponent) {
-            pipe = ((InputComponent<?>) pw).getInput();
-            if (!pipeRows.containsKey(pipe))
-                pwStr = String.format("%s- %s", pipe, pwStr);
-            else
-                pwStr = String.format("-- %s", pwStr);
-            row = setPipeRow(pipe, pipeRows, row);
-        }
-        return new Tuple<>(pwStr, row);
     }
 
     private Integer setPipeRow(Pipe<?> pipe, Map<Pipe<?>, Integer> pipeRows, Integer row) {
@@ -153,11 +147,11 @@ class PipelineChartBuilder implements Callable<String> {
         return row;
     }
 
-    private void doLevelSwaps(int level, List<Tuple<Integer, Integer>> rowSwaps) {
-        for (var rowSwap : rowSwaps) {
-            Object temp = chartMatrix[level - minLevel][rowSwap.getFirst()];
-            chartMatrix[level - minLevel][rowSwap.getFirst()] = chartMatrix[level - minLevel][rowSwap.getSecond()];
-            chartMatrix[level - minLevel][rowSwap.getSecond()] = temp;
+    private void doLevelSwaps(int level, Map<Integer, Integer> rowSwaps) {
+        for (var rowSwap : rowSwaps.entrySet()) {
+            Object temp = chartMatrix[level - minLevel][rowSwap.getKey()];
+            chartMatrix[level - minLevel][rowSwap.getKey()] = chartMatrix[level - minLevel][rowSwap.getValue()];
+            chartMatrix[level - minLevel][rowSwap.getValue()] = temp;
         }
     }
 

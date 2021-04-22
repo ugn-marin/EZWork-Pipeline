@@ -48,7 +48,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
                 pipelineWorkers.size(), getPotentialThreads());
         try {
             string += new PipelineChartBuilder(pipelineWorkers).call();
-        } catch (UnsupportedOperationException e) {
+        } catch (Exception e) {
             string += e.getMessage();
         }
         toString = string;
