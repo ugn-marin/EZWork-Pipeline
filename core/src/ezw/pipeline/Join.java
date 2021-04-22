@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +21,7 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
 
     @SafeVarargs
     Join(Pipe<I> output, Pipe<I>... inputs) {
-        super(inputs.length);
-        Arrays.stream(inputs).forEach(Objects::requireNonNull);
+        super(Sugar.Collections.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
         this.inputs = inputs;

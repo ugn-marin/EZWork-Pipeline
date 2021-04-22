@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -223,10 +225,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
-            Arrays.stream(pipelineWorkers).forEach(Objects::requireNonNull);
             if (pipelineWorkers.length == 0)
                 throw new IllegalArgumentException("No pipeline workers attached.");
-            this.pipelineWorkers.addAll(List.of(pipelineWorkers));
+            this.pipelineWorkers.addAll(List.of(Sugar.Collections.requireNoneNull(pipelineWorkers)));
             return this;
         }
     }

@@ -1,11 +1,11 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
 import ezw.util.generic.Tuple;
 
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 class PipelineChartBuilder implements Callable<String> {
     private final List<PipelineWorker> pipelineWorkers;
@@ -32,7 +32,7 @@ class PipelineChartBuilder implements Callable<String> {
     @Override
     public String call() throws UnsupportedOperationException {
         classifyPipelineWorkers();
-        setLevel(pipelineWorkers.stream().findFirst().orElseThrow(), 0);
+        setLevel(Sugar.Collections.first(pipelineWorkers), 0);
         if (leveledWorkers.size() < pipelineWorkers.size())
             throw new UnsupportedOperationException("Not all workers are discoverable.");
         summarizeLevels();
@@ -44,14 +44,10 @@ class PipelineChartBuilder implements Callable<String> {
     }
 
     private void classifyPipelineWorkers() {
-        outputComponents = pipelineWorkers.stream().filter(pw -> pw instanceof OutputComponent)
-                .map(pw -> (OutputComponent<?>) pw).collect(Collectors.toSet());
-        inputComponents = pipelineWorkers.stream().filter(pw -> pw instanceof InputComponent)
-                .map(pw -> (InputComponent<?>) pw).collect(Collectors.toSet());
-        forks = pipelineWorkers.stream().filter(pw -> pw instanceof Fork).map(pw -> (Fork<?>) pw)
-                .collect(Collectors.toSet());
-        joins = pipelineWorkers.stream().filter(pw -> pw instanceof Join).map(pw -> (Join<?>) pw)
-                .collect(Collectors.toSet());
+        outputComponents = Sugar.Collections.instancesOf(pipelineWorkers, OutputComponent.class);
+        inputComponents = Sugar.Collections.instancesOf(pipelineWorkers, InputComponent.class);
+        forks = Sugar.Collections.instancesOf(pipelineWorkers, Fork.class);
+        joins = Sugar.Collections.instancesOf(pipelineWorkers, Join.class);
     }
 
     private void setLevel(Object pipelineWorker, int level) {
