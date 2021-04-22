@@ -42,10 +42,6 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.supplyPipe = supplyPipe;
     }
 
-    List<PipelineWorker> getPipelineWorkers() {
-        return pipelineWorkers;
-    }
-
     /**
      * Returns the maximum number of auto-allocated threads that this pipeline and its workers may use.
      */
@@ -85,7 +81,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         String string = String.format("Pipeline of %d workers on up to %d threads:\n", pipelineWorkers.size(),
                 getPotentialThreads());
         try {
-            string += new PipelineChartBuilder(this).call();
+            string += new PipelineChartBuilder(pipelineWorkers).call();
         } catch (UnsupportedOperationException e) {
             string += e.getMessage();
         }

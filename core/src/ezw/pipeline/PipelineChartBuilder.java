@@ -22,9 +22,9 @@ class PipelineChartBuilder implements Callable<String> {
     private int maxLevelSize;
     private Object[][] chartMatrix;
 
-    PipelineChartBuilder(Pipeline<?> pipeline) {
-        pipelineWorkers = pipeline.getPipelineWorkers();
-        leveledWorkers = new HashSet<>(pipeline.getPipelineWorkers().size());
+    PipelineChartBuilder(List<PipelineWorker> pipelineWorkers) {
+        this.pipelineWorkers = pipelineWorkers;
+        leveledWorkers = new HashSet<>(pipelineWorkers.size());
         levelsAggregation = new HashMap<>(2);
         notLeveledCheck = Predicate.not(leveledWorkers::contains);
     }

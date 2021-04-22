@@ -352,7 +352,8 @@ public class PipelineCoreTest {
         Pipe<Character> toUpper = new Pipe<>(smallCapacity);
         Pipe<Character> toLower = new Pipe<>(mediumCapacity);
         Pipe<Character> toIdentity = new Pipe<>(mediumCapacity);
-        builder = builder.fork(supplyPipe, toUpper, toLower, toIdentity);
+        SupplyPipe<Character> hyphens = new SupplyPipe<>(largeCapacity, c -> c == '-');
+        builder = builder.fork(supplyPipe, toUpper, toLower, toIdentity, hyphens);
 
         Pipe<Character> upper = new Pipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 1);
@@ -360,16 +361,18 @@ public class PipelineCoreTest {
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 1);
         ezw.pipeline.Function<Character, Character> identity = Pipelines.function(toIdentity, new Pipe<>(smallCapacity),
                 Function.identity());
-        builder = builder.through(charLowerFunction, charUpperFunction, identity);
+        Pipe<Character> toPrint = new Pipe<>(minimumCapacity);
+        builder = builder.through(charLowerFunction, charUpperFunction, identity, Pipelines.function(hyphens, toPrint,
+                Function.identity()));
 
         Pipe<Character> mix = new Pipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(mix, 1);
 
         builder = builder.join(charAccumulator, charUpperFunction, charLowerFunction, identity);
 
-        var pipeline = builder.into(charAccumulator);
+        var pipeline = builder.into(charAccumulator, new Printer<>(System.out, toPrint, 2));
         System.out.println(pipeline);
-        assertEquals(19, pipeline.getPotentialThreads());
+        assertEquals(24, pipeline.getPotentialThreads());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
     }
@@ -558,8 +561,20 @@ public class PipelineCoreTest {
     @Test
     void conditional_direct_two_suppliers() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c == '-');
-        var supplier1 = new CharSupplier(abc, supplyPipe, 1);
-        var supplier2 = new CharSupplier(abc, supplyPipe, 1);
+        var supplier1 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void join() throws InterruptedException {
+                sleep(20);
+                super.join();
+            }
+        };
+        var supplier2 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void join() throws InterruptedException {
+                sleep(20);
+                super.join();
+            }
+        };
         var accum = new CharAccumulator(supplyPipe, 1);
         var pipeline = Pipeline.from(supplier1, supplier2).into(accum);
         System.out.println(pipeline);
