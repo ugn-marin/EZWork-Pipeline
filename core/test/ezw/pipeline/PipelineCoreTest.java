@@ -425,6 +425,7 @@ public class PipelineCoreTest {
         pipeline.run();
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -443,14 +444,17 @@ public class PipelineCoreTest {
             }
         };
         var printer = new Printer<>(System.out, toPrint, 1);
+        Pipeline<Character> pipeline = null;
         try {
-            var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
+            pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
             System.out.println(pipeline);
             pipeline.run();
             fail("Not failed");
         } catch (NumberFormatException e) {
             assertEquals("My failure message", e.getMessage());
         }
+        assert pipeline != null;
+        assertTrue(pipeline.getCancelledWork() > 0);
     }
 
     @Test
@@ -483,6 +487,7 @@ public class PipelineCoreTest {
         } catch (NumberFormatException e) {
             assertEquals("My cancellation message", e.getMessage());
         }
+        assertTrue(pipeline.getCancelledWork() > 0);
     }
 
     @Test
@@ -580,6 +585,7 @@ public class PipelineCoreTest {
         System.out.println(pipeline);
         pipeline.run();
         assertEquals("------------", accum.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -654,6 +660,7 @@ public class PipelineCoreTest {
         });
         pipeline.run();
         assertEquals(full, consumer.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -687,5 +694,39 @@ public class PipelineCoreTest {
         });
         pipeline.run();
         assertTrue(full.startsWith(consumer.getValue()));
+        assertTrue(pipeline.getCancelledWork() > 0);
+    }
+
+    @Test
+    void open_star_slow_stop_count() throws Exception {
+        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleep(2000);
+                super.accept(item);
+            }
+        };
+        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleep(2000);
+                super.accept(item);
+            }
+        };
+        final var pipeline = Pipelines.star(new SupplyPipe<>(mediumCapacity), consumer, printer);
+        System.out.println(pipeline);
+        parallelThread.submit(() -> {
+            try {
+                for (char c : full.toCharArray()) {
+                    pipeline.push(c);
+                }
+                sleep(1000);
+                pipeline.stop();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        pipeline.run();
+        assertEquals(25, pipeline.getCancelledWork());
     }
 }

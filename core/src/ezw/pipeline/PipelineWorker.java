@@ -7,6 +7,7 @@ import ezw.concurrent.InterruptedRuntimeException;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A callable runnable executing in a pipeline.
@@ -15,6 +16,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     private final BlockingThreadPoolExecutor blockingThreadPoolExecutor;
     private final CancellableSubmitter cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
+    private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
     PipelineWorker(int parallel) {
@@ -72,21 +74,30 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Cancels the execution of all internal work, interrupts if possible.
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop.
      * @param t The throwable for the worker to throw. Not allowed to be null - use <code>stop</code> to stop the worker
      *          without an exception.
      */
     public void cancel(Throwable t) {
         setThrowable(Objects.requireNonNull(t, "Throwable is required."));
         blockingThreadPoolExecutor.shutdown();
-        cancellableSubmitter.cancelSubmitted();
+        cancelledWork.addAndGet(cancellableSubmitter.cancelSubmitted());
     }
 
     /**
-     * Cancels the execution of all internal work, interrupts if possible. The worker will not throw an exception.
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
+     * will not throw an exception as a result of this operation.
      */
     public void stop() {
         cancel(new SilentStop());
+    }
+
+    /**
+     * Returns the total number of tasks that failed, were cancelled after submitting, or interrupted. The full count is
+     * only reached after the execution returns or throws an exception.
+     */
+    public int getCancelledWork() {
+        return cancelledWork.get();
     }
 
     /**

@@ -62,10 +62,19 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
+    public int getCancelledWork() {
+        return super.getCancelledWork() + pipelineWorkers.stream().mapToInt(PipelineWorker::getCancelledWork).sum();
+    }
+
+    @Override
     protected void work() {
-        for (PipelineWorker pipelineWorker : pipelineWorkers) {
-            submit(pipelineWorker);
-        }
+        pipelineWorkers.forEach(this::submit);
+    }
+
+    @Override
+    public void cancel(Throwable t) {
+        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(t));
+        super.cancel(t);
     }
 
     /**
