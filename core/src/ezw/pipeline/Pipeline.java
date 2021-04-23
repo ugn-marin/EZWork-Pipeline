@@ -2,10 +2,7 @@ package ezw.pipeline;
 
 import ezw.util.Sugar;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -16,6 +13,7 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
+    private final PipelineChartBuilder pipelineChartBuilder;
     private final String toString;
 
     /**
@@ -44,14 +42,18 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
-        String string = String.format("%s of %d workers on up to %d threads:\n", isOpen ? "Open pipeline" : "Pipeline",
-                pipelineWorkers.size(), getPotentialThreads());
+        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on up to %d threads:\n", isOpen ?
+                        "Open pipeline" : "Pipeline", pipelineWorkers.size(), getPotentialThreads()));
+        pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
-            string += new PipelineChartBuilder(pipelineWorkers).call();
+            sb.append(pipelineChartBuilder.call());
         } catch (Exception e) {
-            string += e.getMessage();
+            sb.append(e.getMessage());
         }
-        toString = string;
+        for (PipelineWarning warning : pipelineChartBuilder.getWarnings()) {
+            sb.append('\n').append(warning.getDescription()).append('.');
+        }
+        toString = sb.toString();
     }
 
     /**
@@ -95,6 +97,13 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public void setEndOfInput() {
         supplyPipe.setEndOfInput();
+    }
+
+    /**
+     * Returns the warnings detected on the pipeline construction.
+     */
+    public Set<PipelineWarning> getWarnings() {
+        return pipelineChartBuilder.getWarnings();
     }
 
     @Override

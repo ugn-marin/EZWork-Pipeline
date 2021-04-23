@@ -83,7 +83,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         if (indexedItem == null)
             return;
         if (endOfInput)
-            throw new IllegalStateException("Attempted to push into pipe after end of input.");
+            throw new IllegalStateException("Attempting to push into pipe after end of input.");
         while (true) {
             lock.lock();
             try {
