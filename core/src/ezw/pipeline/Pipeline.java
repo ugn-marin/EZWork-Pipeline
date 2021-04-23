@@ -19,7 +19,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final String toString;
 
     /**
-     * Creates a builder of a closed pipeline.
+     * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
      * @param suppliers One or more suppliers feeding the pipeline.
      * @param <S> The type of the supplied items.
      * @return The pipeline builder.
@@ -30,7 +30,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Creates a builder of an open pipeline.
+     * Constructs a builder of an open pipeline.
      * @param supplyPipe The supply pipe feeding the pipeline.
      * @param <S> The type of the supplied items.
      * @return The pipeline builder.

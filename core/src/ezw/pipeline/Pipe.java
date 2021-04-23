@@ -29,7 +29,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
     private boolean endOfInput = false;
 
     /**
-     * Creates a pipe.
+     * Constructs a pipe.
      * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
      *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
      *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of

@@ -10,7 +10,7 @@ public abstract class Supplier<O> extends PipelineWorker implements SupplyGate<O
     private final SupplyPipe<O> output;
 
     /**
-     * Creates a single-threaded supplier.
+     * Constructs a single-threaded supplier.
      * @param output The output pipe.
      */
     public Supplier(SupplyPipe<O> output) {
@@ -18,7 +18,7 @@ public abstract class Supplier<O> extends PipelineWorker implements SupplyGate<O
     }
 
     /**
-     * Creates a multi-threaded supplier.
+     * Constructs a multi-threaded supplier.
      * @param output The output pipe.
      * @param parallel The maximum parallel items supplying to allow.
      */

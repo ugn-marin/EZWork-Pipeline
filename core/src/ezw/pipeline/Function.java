@@ -13,7 +13,7 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
     private final Pipe<O> output;
 
     /**
-     * Creates a single-threaded function.
+     * Constructs a single-threaded function.
      * @param input The input pipe.
      * @param output The output pipe.
      */
@@ -22,7 +22,7 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
     }
 
     /**
-     * Creates a multi-threaded function.
+     * Constructs a multi-threaded function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param parallel The maximum parallel items applying to allow.

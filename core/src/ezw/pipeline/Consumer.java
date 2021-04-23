@@ -10,7 +10,7 @@ public abstract class Consumer<I> extends PipelineWorker implements InputCompone
     private final Pipe<I> input;
 
     /**
-     * Creates a single-threaded consumer.
+     * Constructs a single-threaded consumer.
      * @param input The input pipe.
      */
     public Consumer(Pipe<I> input) {
@@ -18,7 +18,7 @@ public abstract class Consumer<I> extends PipelineWorker implements InputCompone
     }
 
     /**
-     * Creates a multi-threaded consumer.
+     * Constructs a multi-threaded consumer.
      * @param input The input pipe.
      * @param parallel The maximum parallel items consuming to allow.
      */
