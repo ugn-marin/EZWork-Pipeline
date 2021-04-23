@@ -299,9 +299,9 @@ public class PipelineCoreTest {
     }
 
     @Test
-    void supplier10slow_medium_accumulator5slow() throws Exception {
-        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
-        CharSupplier charSupplier = new CharSupplier(five + five + five + five + five, supplyPipe, 10) {
+    void supplier20slow_small_accumulator5slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 20) {
             @Override
             protected Character get() throws InterruptedException {
                 sleepBetween(1, 5);
@@ -312,6 +312,52 @@ public class PipelineCoreTest {
             @Override
             protected void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 3);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five.length() * 5, charAccumulator.getValue().length());
+    }
+
+    @Test
+    void supplier10slow_medium_accumulator5slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 10) {
+            @Override
+            protected Character get() throws InterruptedException {
+                sleepBetween(1, 5);
+                return super.get();
+            }
+        };
+        CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 5) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleepBetween(1, 3);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five.length() * 5, charAccumulator.getValue().length());
+    }
+
+    @Test
+    void supplier32slow_minimum_accumulator10slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
+            @Override
+            protected Character get() throws InterruptedException {
+                sleepBetween(1, 10);
+                return super.get();
+            }
+        };
+        CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleepBetween(1, 10);
                 super.accept(item);
             }
         };

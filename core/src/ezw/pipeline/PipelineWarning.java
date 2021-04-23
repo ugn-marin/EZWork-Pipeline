@@ -8,7 +8,7 @@ public enum PipelineWarning {
      * Indicates that the pipeline couldn't discover all of the attached workers by following the pipes of the input and
      * output components, forks and joins. This might mean that some workers are not properly interconnected by pipes,
      * or don't properly implement the input/output component interfaces. If intentional, make sure the workers have
-     * other means to get/send their input/output.
+     * the means to get/send their input/output.
      */
     DISCOVERY("Not all workers are discoverable"),
     /**
