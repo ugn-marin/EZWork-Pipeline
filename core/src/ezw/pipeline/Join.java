@@ -2,7 +2,6 @@ package ezw.pipeline;
 
 import ezw.util.Sugar;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
