@@ -43,7 +43,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on up to %d threads:\n", isOpen ?
-                        "Open pipeline" : "Pipeline", pipelineWorkers.size(), getPotentialThreads()));
+                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getPotentialThreads()));
         pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
             sb.append(pipelineChartBuilder.call());
