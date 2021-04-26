@@ -11,7 +11,7 @@ public abstract class Pipelines {
     private Pipelines() {}
 
     /**
-     * Creates a pipeline from the supplier into the consumer. Equivalent to:<br><code><pre>
+     * Constructs a pipeline from the supplier into the consumer. Equivalent to:<br><code><pre>
      * Pipeline.from(supplier).into(consumer);</pre></code>
      * @param supplier The supplier.
      * @param consumer The consumer.
@@ -23,7 +23,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a pipeline from the supplier into the consumer using a simple supply pipe.
+     * Constructs a pipeline from the supplier into the consumer using a simple supply pipe.
      * @param get The supplier get implementation.
      * @param accept The consumer accept implementation.
      * @param <O> The items type.
@@ -35,7 +35,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a star pipeline forking from the supplier into all the consumers.
+     * Constructs a star pipeline forking from the supplier into all the consumers.
      * @param supplier The supplier.
      * @param consumers The consumers.
      * @param <O> The items type.
@@ -47,7 +47,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates an open star pipeline forking from the supply pipe into all the consumers.
+     * Constructs an open star pipeline forking from the supply pipe into all the consumers.
      * @param supplyPipe The supply pipe.
      * @param consumers The consumers.
      * @param <O> The items type.
@@ -59,7 +59,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple supplier.
+     * Constructs a simple supplier.
      * @param output The output pipe.
      * @param get The get implementation.
      * @param <O> The output items type.
@@ -70,7 +70,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple multi-threaded supplier.
+     * Constructs a simple multi-threaded supplier.
      * @param output The output pipe.
      * @param parallel The maximum parallel items supplying to allow.
      * @param get The get implementation.
@@ -89,7 +89,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple function.
+     * Constructs a simple function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param apply The apply implementation.
@@ -103,7 +103,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple multi-threaded function.
+     * Constructs a simple multi-threaded function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param parallel The maximum parallel items applying to allow.
@@ -125,7 +125,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple transformer.
+     * Constructs a simple transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param transform The transform implementation.
@@ -141,7 +141,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple multi-threaded transformer.
+     * Constructs a simple multi-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
@@ -170,7 +170,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple consumer.
+     * Constructs a simple consumer.
      * @param input The input pipe.
      * @param accept The accept implementation.
      * @param <I> The input items type.
@@ -181,7 +181,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Creates a simple multi-threaded consumer.
+     * Constructs a simple multi-threaded consumer.
      * @param input The input pipe.
      * @param parallel The maximum parallel items consuming to allow.
      * @param accept The accept implementation.

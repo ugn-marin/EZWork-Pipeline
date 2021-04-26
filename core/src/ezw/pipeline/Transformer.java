@@ -15,7 +15,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     private final SupplyPipe<O> output;
 
     /**
-     * Creates a single-threaded transformer.
+     * Constructs a single-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      */
@@ -24,7 +24,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     }
 
     /**
-     * Creates a multi-threaded transformer.
+     * Constructs a multi-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
@@ -62,7 +62,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }

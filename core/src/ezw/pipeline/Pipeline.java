@@ -1,9 +1,8 @@
 package ezw.pipeline;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import ezw.util.Sugar;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -14,9 +13,11 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
+    private final PipelineChartBuilder pipelineChartBuilder;
+    private final String toString;
 
     /**
-     * Creates a builder of a closed pipeline.
+     * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
      * @param suppliers One or more suppliers feeding the pipeline.
      * @param <S> The type of the supplied items.
      * @return The pipeline builder.
@@ -27,7 +28,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Creates a builder of an open pipeline.
+     * Constructs a builder of an open pipeline.
      * @param supplyPipe The supply pipe feeding the pipeline.
      * @param <S> The type of the supplied items.
      * @return The pipeline builder.
@@ -40,6 +41,19 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         super(pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
+        boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
+        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on up to %d threads:\n", isOpen ?
+                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getPotentialThreads()));
+        pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
+        try {
+            sb.append(pipelineChartBuilder.call());
+        } catch (Exception e) {
+            sb.append(e.getMessage());
+        }
+        for (PipelineWarning warning : pipelineChartBuilder.getWarnings()) {
+            sb.append('\n').append(warning.getDescription()).append('.');
+        }
+        toString = sb.toString();
     }
 
     /**
@@ -50,10 +64,19 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
+    public int getCancelledWork() {
+        return super.getCancelledWork() + pipelineWorkers.stream().mapToInt(PipelineWorker::getCancelledWork).sum();
+    }
+
+    @Override
     protected void work() {
-        for (PipelineWorker pipelineWorker : pipelineWorkers) {
-            submit(pipelineWorker);
-        }
+        pipelineWorkers.forEach(this::submit);
+    }
+
+    @Override
+    public void cancel(Throwable t) {
+        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(t));
+        super.cancel(t);
     }
 
     /**
@@ -74,6 +97,18 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public void setEndOfInput() {
         supplyPipe.setEndOfInput();
+    }
+
+    /**
+     * Returns the warnings detected on the pipeline construction.
+     */
+    public Set<PipelineWarning> getWarnings() {
+        return pipelineChartBuilder.getWarnings();
+    }
+
+    @Override
+    public String toString() {
+        return toString;
     }
 
     /**
@@ -211,10 +246,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
-            Arrays.stream(pipelineWorkers).forEach(Objects::requireNonNull);
             if (pipelineWorkers.length == 0)
                 throw new IllegalArgumentException("No pipeline workers attached.");
-            this.pipelineWorkers.addAll(List.of(pipelineWorkers));
+            this.pipelineWorkers.addAll(List.of(Sugar.Collections.requireNoneNull(pipelineWorkers)));
             return this;
         }
     }

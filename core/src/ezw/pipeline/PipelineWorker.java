@@ -7,6 +7,7 @@ import ezw.concurrent.InterruptedRuntimeException;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A callable runnable executing in a pipeline.
@@ -15,6 +16,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     private final BlockingThreadPoolExecutor blockingThreadPoolExecutor;
     private final CancellableSubmitter cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
+    private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
     PipelineWorker(int parallel) {
@@ -30,8 +32,8 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Executes the worker until all internal work is done, or an exception thrown.
-     * @throws Exception An exception terminating the pipeline.
+     * Executes the worker until all internal work is done, or an exception is thrown.
+     * @throws Exception An exception terminating the pipeline. May come from a worker, or the cancel argument.
      */
     @Override
     public void run() throws Exception {
@@ -72,28 +74,37 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Cancels the execution of all internal work, interrupts if possible.
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop.
      * @param t The throwable for the worker to throw. Not allowed to be null - use <code>stop</code> to stop the worker
      *          without an exception.
      */
     public void cancel(Throwable t) {
         setThrowable(Objects.requireNonNull(t, "Throwable is required."));
         blockingThreadPoolExecutor.shutdown();
-        cancellableSubmitter.cancelSubmitted();
+        cancelledWork.addAndGet(cancellableSubmitter.cancelSubmitted());
     }
 
     /**
-     * Cancels the execution of all internal work, interrupts if possible. The worker will not throw an exception.
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
+     * will not throw an exception as a result of this operation.
      */
     public void stop() {
         cancel(new SilentStop());
     }
 
     /**
+     * Returns the total number of tasks that failed, were cancelled after submitting, or interrupted. The full count is
+     * only reached after the execution returns or throws an exception.
+     */
+    public int getCancelledWork() {
+        return cancelledWork.get();
+    }
+
+    /**
      * Waits for all submitted tasks by shutting the thread pool down and awaiting termination.
      * @throws InterruptedException If interrupted.
      */
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         blockingThreadPoolExecutor.join();
     }
 
@@ -107,7 +118,8 @@ public abstract class PipelineWorker implements CallableRunnable {
      * Runs after all internal work is done.
      * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
      *                  stopped by calling <code>stop</code>.
-     * @throws Exception The throwable if not null.
+     * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, wrapped in a new
+     * Exception otherwise.
      */
     protected void onFinish(Throwable throwable) throws Exception {
         if (throwable == null)
@@ -117,6 +129,19 @@ public abstract class PipelineWorker implements CallableRunnable {
         else if (throwable instanceof Exception)
             throw (Exception) throwable;
         throw new Exception(throwable);
+    }
+
+    @Override
+    public String toString() {
+        Class<?> clazz = getClass();
+        String simpleName = clazz.getSimpleName();
+        while (simpleName.isEmpty()) {
+            clazz = clazz.getSuperclass();
+            simpleName = clazz.getSimpleName();
+        }
+        if (getParallel() > 1)
+            simpleName += String.format("[%d]", getParallel());
+        return simpleName;
     }
 
     private static class SilentStop extends Throwable {}

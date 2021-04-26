@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -15,8 +17,8 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
 
     @SafeVarargs
     Fork(Pipe<I> input, Pipe<I>... outputs) {
-        super(Math.max(1, (int) Arrays.stream(outputs).filter(p -> !(p instanceof SupplyPipe)).count()));
-        Arrays.stream(outputs).forEach(Objects::requireNonNull);
+        super(Math.max(1, (int) Arrays.stream(Sugar.Collections.requireNoneNull(outputs)).filter(
+                p -> !(p instanceof SupplyPipe)).count()));
         if (outputs.length < 2)
             throw new IllegalArgumentException("Fork requires at least 2 output pipes.");
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
@@ -26,6 +28,10 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
     @Override
     public Pipe<I> getInput() {
         return input;
+    }
+
+    Pipe<I>[] getOutputs() {
+        return outputs;
     }
 
     @Override
@@ -41,8 +47,13 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
+    }
+
+    @Override
+    public String toString() {
+        return "fork";
     }
 }

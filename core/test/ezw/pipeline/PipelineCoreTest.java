@@ -54,6 +54,11 @@ public class PipelineCoreTest {
         return sb.toString();
     }
 
+    private static void validate(Pipeline<?> pipeline) {
+        System.out.println(pipeline);
+        assertTrue(pipeline.getWarnings().isEmpty());
+    }
+
     @Test
     void constructor_definitions() {
         SupplyPipe<Object> pipe = new SupplyPipe<>(1);
@@ -132,6 +137,7 @@ public class PipelineCoreTest {
         // End of input
         try {
             var pipeline = Pipelines.direct(() -> null, x -> {});
+            System.out.println(pipeline);
             pipeline.run();
             pipeline.push(1);
             fail();
@@ -141,6 +147,7 @@ public class PipelineCoreTest {
         // Reuse
         try {
             var pipeline = Pipelines.direct(() -> null, x -> {});
+            System.out.println(pipeline);
             pipeline.run();
             pipeline.run();
             fail();
@@ -150,11 +157,32 @@ public class PipelineCoreTest {
     }
 
     @Test
+    void chart_disconnected() {
+        var pipeline = Pipelines.direct(Pipelines.supplier(new SupplyPipe<Integer>(1), () -> null),
+                Pipelines.consumer(new Pipe<>(1), x -> {}));
+        System.out.println(pipeline);
+        assertTrue(pipeline.getWarnings().contains(PipelineWarning.DISCOVERY));
+        assertTrue(pipeline.toString().contains(PipelineWarning.DISCOVERY.getDescription()));
+    }
+
+    @Test
+    void chart_cycle() {
+        var supplyPipe = new SupplyPipe<Character>(5);
+        var pipeline = Pipeline.from(new CharSupplier(abc, supplyPipe, 1))
+                .through(Pipelines.function(supplyPipe, supplyPipe, x -> x))
+                .into(new Printer<>(System.out, supplyPipe, 1));
+        System.out.println(pipeline);
+        assertTrue(pipeline.getWarnings().contains(PipelineWarning.CYCLE));
+    }
+
+    @Test
     void supplier1_minimum_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
         CharSupplier charSupplier = new CharSupplier(abc, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1);
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(abc, charAccumulator.getValue());
     }
 
@@ -163,7 +191,9 @@ public class PipelineCoreTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1);
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five, charAccumulator.getValue());
     }
 
@@ -176,7 +206,9 @@ public class PipelineCoreTest {
         Pipe<Character> upper = new Pipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(lower, upper, 1);
         CharAccumulator charAccumulator = new CharAccumulator(upper, 1);
-        Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator).run();
+        var pipeline = Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five.toUpperCase(), charAccumulator.getValue());
     }
 
@@ -189,7 +221,9 @@ public class PipelineCoreTest {
         Pipe<Character> upper = new Pipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(lower, upper, 1);
         CharAccumulator charAccumulator = new CharAccumulator(upper, 1);
-        Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator).run();
+        var pipeline = Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five.toUpperCase(), charAccumulator.getValue());
     }
 
@@ -204,7 +238,9 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five, charAccumulator.getValue());
     }
 
@@ -219,7 +255,9 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(full, charAccumulator.getValue());
     }
 
@@ -234,7 +272,9 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five.length(), charAccumulator.getValue().length());
     }
 
@@ -249,7 +289,9 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        var future = parallelThread.submit(Pipelines.direct(charSupplier, charAccumulator).toCallable());
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        var future = parallelThread.submit(pipeline.toCallable());
         sleep(200);
         assertTrue(supplyPipe.totalItems() > mediumCapacity);
         future.get();
@@ -257,9 +299,9 @@ public class PipelineCoreTest {
     }
 
     @Test
-    void supplier10slow_medium_accumulator5slow() throws Exception {
-        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
-        CharSupplier charSupplier = new CharSupplier(five + five + five + five + five, supplyPipe, 10) {
+    void supplier20slow_small_accumulator5slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 20) {
             @Override
             protected Character get() throws InterruptedException {
                 sleepBetween(1, 5);
@@ -273,7 +315,55 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five.length() * 5, charAccumulator.getValue().length());
+    }
+
+    @Test
+    void supplier10slow_medium_accumulator5slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 10) {
+            @Override
+            protected Character get() throws InterruptedException {
+                sleepBetween(1, 5);
+                return super.get();
+            }
+        };
+        CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 5) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleepBetween(1, 3);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five.length() * 5, charAccumulator.getValue().length());
+    }
+
+    @Test
+    void supplier32slow_minimum_accumulator10slow() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
+            @Override
+            protected Character get() throws InterruptedException {
+                sleepBetween(1, 10);
+                return super.get();
+            }
+        };
+        CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleepBetween(1, 10);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five.length() * 5, charAccumulator.getValue().length());
     }
 
@@ -289,7 +379,9 @@ public class PipelineCoreTest {
             }
         };
         var printer = new Printer<>(System.out, new Pipe<Character>(mediumCapacity), 1);
-        Pipelines.star(charSupplier, charAccumulator, printer).run();
+        var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(five, charAccumulator.getValue());
     }
 
@@ -315,6 +407,7 @@ public class PipelineCoreTest {
         builder = builder.join(charAccumulator, charUpperFunction, charLowerFunction);
 
         var pipeline = builder.into(charAccumulator);
+        validate(pipeline);
         assertEquals(15, pipeline.getPotentialThreads());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
@@ -329,7 +422,8 @@ public class PipelineCoreTest {
         Pipe<Character> toUpper = new Pipe<>(smallCapacity);
         Pipe<Character> toLower = new Pipe<>(mediumCapacity);
         Pipe<Character> toIdentity = new Pipe<>(mediumCapacity);
-        builder = builder.fork(supplyPipe, toUpper, toLower, toIdentity);
+        SupplyPipe<Character> hyphens = new SupplyPipe<>(largeCapacity, c -> c == '-');
+        builder = builder.fork(supplyPipe, toUpper, toLower, toIdentity, hyphens);
 
         Pipe<Character> upper = new Pipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 1);
@@ -337,15 +431,18 @@ public class PipelineCoreTest {
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 1);
         ezw.pipeline.Function<Character, Character> identity = Pipelines.function(toIdentity, new Pipe<>(smallCapacity),
                 Function.identity());
-        builder = builder.through(charLowerFunction, charUpperFunction, identity);
+        Pipe<Character> toPrint = new Pipe<>(minimumCapacity);
+        builder = builder.through(charLowerFunction, charUpperFunction, identity, Pipelines.function(hyphens, toPrint,
+                Function.identity()));
 
         Pipe<Character> mix = new Pipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(mix, 1);
 
         builder = builder.join(charAccumulator, charUpperFunction, charLowerFunction, identity);
 
-        var pipeline = builder.into(charAccumulator);
-        assertEquals(19, pipeline.getPotentialThreads());
+        var pipeline = builder.into(charAccumulator, new Printer<>(System.out, toPrint, 2));
+        validate(pipeline);
+        assertEquals(24, pipeline.getPotentialThreads());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
     }
@@ -393,10 +490,12 @@ public class PipelineCoreTest {
         var printer = new Printer<>(System.out, toPrint, 1);
 
         var pipeline = builder.fork(mix, toAccum, toPrint).into(charAccumulator, printer);
+        validate(pipeline);
         assertEquals(24, pipeline.getPotentialThreads());
         pipeline.run();
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -415,12 +514,17 @@ public class PipelineCoreTest {
             }
         };
         var printer = new Printer<>(System.out, toPrint, 1);
+        Pipeline<Character> pipeline = null;
         try {
-            Pipelines.star(charSupplier, charAccumulator, printer).run();
+            pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
+            validate(pipeline);
+            pipeline.run();
             fail("Not failed");
         } catch (NumberFormatException e) {
             assertEquals("My failure message", e.getMessage());
         }
+        assert pipeline != null;
+        assertTrue(pipeline.getCancelledWork() > 0);
     }
 
     @Test
@@ -438,6 +542,7 @@ public class PipelineCoreTest {
         };
         var printer = new Printer<>(System.out, toPrint, 1);
         var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
+        validate(pipeline);
         parallelThread.submit(() -> {
             try {
                 sleep(600);
@@ -452,6 +557,7 @@ public class PipelineCoreTest {
         } catch (NumberFormatException e) {
             assertEquals("My cancellation message", e.getMessage());
         }
+        assertTrue(pipeline.getCancelledWork() > 0);
     }
 
     @Test
@@ -459,7 +565,9 @@ public class PipelineCoreTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c != '-');
         CharSupplier charSupplier = new CharSupplier(abc, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1);
-        Pipelines.direct(charSupplier, charAccumulator).run();
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(abc.replace("-", ""), charAccumulator.getValue());
     }
 
@@ -485,7 +593,9 @@ public class PipelineCoreTest {
         Pipe<String> toPrint = new Pipe<>(mediumCapacity);
         var consumer = Pipelines.consumer(toAccum, s -> wordsCount.incrementAndGet());
         var printer = new Printer<>(System.out, toPrint, 1);
-        Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).run();
+        var pipeline = Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(25, wordsCount.get());
     }
 
@@ -495,7 +605,9 @@ public class PipelineCoreTest {
         var function = Pipelines.function(supplier.getOutput(),
                 new SupplyPipe<Character>(minimumCapacity, Character::isUpperCase), Function.identity());
         var consumer = new CharAccumulator(function.getOutput(), 1);
-        Pipeline.from(supplier).through(function).into(consumer).run();
+        var pipeline = Pipeline.from(supplier).through(function).into(consumer);
+        validate(pipeline);
+        pipeline.run();
         assertEquals("TABC" + ABC.replace("-", ""), consumer.getValue());
     }
 
@@ -504,7 +616,9 @@ public class PipelineCoreTest {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(mediumCapacity), 1);
         var accum1 = new CharAccumulator(new SupplyPipe<>(mediumCapacity, c -> c == '-'), 1);
         var accum2 = new CharAccumulator(new SupplyPipe<>(minimumCapacity, c -> c != '-'), 1);
-        Pipelines.star(supplier, accum1, accum2).run();
+        var pipeline = Pipelines.star(supplier, accum1, accum2);
+        validate(pipeline);
+        pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc.replace("-", ""), accum2.getValue());
     }
@@ -513,8 +627,36 @@ public class PipelineCoreTest {
     void conditional_direct() throws Exception {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(minimumCapacity, c -> c != '-'), 1);
         var accum2 = new CharAccumulator(supplier.getOutput(), 1);
-        Pipelines.direct(supplier, accum2).run();
+        var pipeline = Pipelines.direct(supplier, accum2);
+        validate(pipeline);
+        pipeline.run();
         assertEquals(abc.replace("-", ""), accum2.getValue());
+    }
+
+    @Test
+    void conditional_direct_two_suppliers() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c == '-');
+        var supplier1 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void join() throws InterruptedException {
+                sleep(20);
+                super.join();
+            }
+        };
+        var supplier2 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void join() throws InterruptedException {
+                sleep(20);
+                super.join();
+            }
+        };
+        var accum = new CharAccumulator(supplyPipe, 1);
+        var pipeline = Pipeline.from(supplier1, supplier2).into(accum);
+        System.out.println(pipeline);
+        assertTrue(pipeline.getWarnings().contains(PipelineWarning.MULTIPLE_INPUTS));
+        pipeline.run();
+        assertEquals("------------", accum.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -522,7 +664,9 @@ public class PipelineCoreTest {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(mediumCapacity), 1);
         var accum1 = new CharAccumulator(new SupplyPipe<>(mediumCapacity, c -> c == '-'), 1);
         var accum2 = new CharAccumulator(new Pipe<>(minimumCapacity), 1);
-        Pipelines.star(supplier, accum1, accum2).run();
+        var pipeline = Pipelines.star(supplier, accum1, accum2);
+        validate(pipeline);
+        pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc, accum2.getValue());
     }
@@ -550,7 +694,9 @@ public class PipelineCoreTest {
                 super.accept(item);
             }
         };
-        Pipelines.star(supplier, accum1, accum2).run();
+        var pipeline = Pipelines.star(supplier, accum1, accum2);
+        validate(pipeline);
+        pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc.replace("-", ""), accum2.getValue());
     }
@@ -572,6 +718,7 @@ public class PipelineCoreTest {
             }
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
+        validate(pipeline);
         parallelThread.submit(() -> {
             try {
                 for (char c : full.toCharArray()) {
@@ -584,6 +731,7 @@ public class PipelineCoreTest {
         });
         pipeline.run();
         assertEquals(full, consumer.getValue());
+        assertEquals(0, pipeline.getCancelledWork());
     }
 
     @Test
@@ -603,6 +751,7 @@ public class PipelineCoreTest {
             }
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
+        validate(pipeline);
         parallelThread.submit(() -> {
             try {
                 for (char c : full.toCharArray()) {
@@ -616,5 +765,39 @@ public class PipelineCoreTest {
         });
         pipeline.run();
         assertTrue(full.startsWith(consumer.getValue()));
+        assertTrue(pipeline.getCancelledWork() > 0);
+    }
+
+    @Test
+    void open_star_slow_stop_count() throws Exception {
+        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleep(2000);
+                super.accept(item);
+            }
+        };
+        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleep(2000);
+                super.accept(item);
+            }
+        };
+        final var pipeline = Pipelines.star(new SupplyPipe<>(mediumCapacity), consumer, printer);
+        validate(pipeline);
+        parallelThread.submit(() -> {
+            try {
+                for (char c : full.toCharArray()) {
+                    pipeline.push(c);
+                }
+                sleep(1000);
+                pipeline.stop();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        pipeline.run();
+        assertEquals(25, pipeline.getCancelledWork());
     }
 }

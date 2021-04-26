@@ -12,7 +12,7 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
     private final Predicate<I> predicate;
 
     /**
-     * Creates a supply pipe.
+     * Constructs a supply pipe.
      * @param baseCapacity The base capacity.
      */
     public SupplyPipe(int baseCapacity) {
@@ -20,7 +20,7 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
     }
 
     /**
-     * Creates a conditional supply pipe.
+     * Constructs a conditional supply pipe.
      * @param baseCapacity The base capacity.
      * @param predicate The predicate by which to accept pushed items into the pipe. Ignored if null.
      */
@@ -39,5 +39,10 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
     @Override
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
         push(indexedItem.getItem());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("-<S%s:%d>-", predicate != null ? "?" : "", baseCapacity);
     }
 }

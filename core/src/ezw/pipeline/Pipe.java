@@ -19,6 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Pipe<I> implements Iterable<IndexedItem<I>> {
     private static final long POLLING_TIMEOUT = 100;
 
+    protected final int baseCapacity;
     private final PipeIterator iterator = new PipeIterator();
     private final ReentrantLock lock = new ReentrantLock(true);
     private final BlockingQueue<IndexedItem<I>> inOrderQueue;
@@ -28,13 +29,14 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
     private boolean endOfInput = false;
 
     /**
-     * Creates a pipe.
+     * Constructs a pipe.
      * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
      *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
      *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
      *                     the pipe can reach <code>BC+N</code>.
      */
     public Pipe(int baseCapacity) {
+        this.baseCapacity = baseCapacity;
         inOrderQueue = new ArrayBlockingQueue<>(baseCapacity, true);
         outOfOrderItems = new HashMap<>();
     }
@@ -132,6 +134,11 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
     @Override
     public Iterator<IndexedItem<I>> iterator() {
         return iterator;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("-<%d>-", baseCapacity);
     }
 
     private class PipeIterator implements Iterator<IndexedItem<I>> {

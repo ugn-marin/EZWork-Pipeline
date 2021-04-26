@@ -1,8 +1,7 @@
 package ezw.pipeline;
 
-import ezw.concurrent.Interruptible;
+import ezw.util.Sugar;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -21,14 +20,17 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
 
     @SafeVarargs
     Join(Pipe<I> output, Pipe<I>... inputs) {
-        super(inputs.length);
-        Arrays.stream(inputs).forEach(Objects::requireNonNull);
+        super(Sugar.Collections.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
         remainingInputs = new HashMap<>(inputs.length);
         modifiedInputs = new HashMap<>(inputs.length);
+    }
+
+    Pipe<I>[] getInputs() {
+        return inputs;
     }
 
     @Override
@@ -48,7 +50,7 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
     }
 
     @Override
-    void join() throws InterruptedException {
+    protected void join() throws InterruptedException {
         super.join();
         output.setEndOfInput();
     }
@@ -81,5 +83,10 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
             }
         }
         output.push(modified != null ? modified : indexedItem);
+    }
+
+    @Override
+    public String toString() {
+        return "join";
     }
 }
