@@ -46,8 +46,8 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
     @Override
     protected void work() {
         for (IndexedItem<I> indexedItem : input) {
-            final long index = indexedItem.getIndex();
-            final I item = indexedItem.getItem();
+            long index = indexedItem.getIndex();
+            I item = indexedItem.getItem();
             submit(() -> output.push(new IndexedItem<>(index, apply(item), item)));
         }
     }

@@ -131,6 +131,11 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         endOfInput = true;
     }
 
+    void clear() {
+        inOrderQueue.clear();
+        outOfOrderItems.clear();
+    }
+
     @Override
     public Iterator<IndexedItem<I>> iterator() {
         return iterator;

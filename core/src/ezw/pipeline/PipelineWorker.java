@@ -75,21 +75,21 @@ public abstract class PipelineWorker implements CallableRunnable {
 
     /**
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop.
-     * @param t The throwable for the worker to throw. Not allowed to be null - use <code>stop</code> to stop the worker
-     *          without an exception.
+     * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage.
      */
-    public void cancel(Throwable t) {
-        setThrowable(Objects.requireNonNull(t, "Throwable is required."));
+    public void cancel(Throwable throwable) {
+        setThrowable(Objects.requireNonNullElse(throwable, new SilentStop()));
         blockingThreadPoolExecutor.shutdown();
         cancelledWork.addAndGet(cancellableSubmitter.cancelSubmitted());
     }
 
     /**
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
-     * will not throw an exception as a result of this operation.
+     * will not throw an exception as a result of this operation. Equivalent to:<br><code><pre>
+     * cancel(null);</pre></code>
      */
     public void stop() {
-        cancel(new SilentStop());
+        cancel(null);
     }
 
     /**

@@ -73,12 +73,6 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         pipelineWorkers.forEach(this::submit);
     }
 
-    @Override
-    public void cancel(Throwable t) {
-        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(t));
-        super.cancel(t);
-    }
-
     /**
      * Pushing an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
      * this method might be used for additional supply for a closed pipeline as well.
@@ -88,6 +82,17 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     @Override
     public void push(S item) throws InterruptedException {
         supplyPipe.push(item);
+    }
+
+    @Override
+    protected void onFinish(Throwable throwable) throws Exception {
+        setEndOfInput();
+        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(throwable));
+        Sugar.Collections.<InputComponent<?>>instancesOf(pipelineWorkers, InputComponent.class).stream()
+                .map(InputComponent::getInput).forEach(Pipe::clear);
+        Sugar.Collections.<OutputComponent<?>>instancesOf(pipelineWorkers, OutputComponent.class).stream()
+                .map(OutputComponent::getOutput).forEach(Pipe::clear);
+        super.onFinish(throwable);
     }
 
     /**

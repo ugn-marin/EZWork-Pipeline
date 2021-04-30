@@ -77,8 +77,8 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     protected abstract Collection<O> transform(I item) throws Exception;
 
     /**
-     * Supplies leftover output items when no items left to transform. This would usually only make sense in a single
-     * threaded shrinking transformer (returning 0 or 1 outputs per input) with an accumulative logic.
+     * Supplies leftover output items when no items left to transform. This would usually only make sense in a shrinking
+     * transformer (returning 0 or 1 outputs per input) with an accumulative logic.
      * @return The transformed items collection. If empty or null, skipped, else each output item is pushed into the
      * output pipe.
      * @throws Exception An exception terminating the pipeline.
