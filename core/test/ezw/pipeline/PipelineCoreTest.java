@@ -368,6 +368,44 @@ public class PipelineCoreTest {
     }
 
     @Test
+    void supplier32slow_medium_accumulator10slow_interrupt() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
+        CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
+            @Override
+            protected Character get() throws InterruptedException {
+                sleepBetween(1, 10);
+                return super.get();
+            }
+        };
+        CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
+            @Override
+            protected void accept(Character item) throws InterruptedException {
+                sleepBetween(1, 10);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(charSupplier, charAccumulator);
+        validate(pipeline);
+        parallelThread.submit(() -> {
+            try {
+                sleep(600);
+                pipeline.interrupt();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        try {
+            pipeline.run();
+            fail("Not interrupted");
+        } catch (InterruptedException e) {
+            assertEquals("Controlled interruption.", e.getMessage());
+        }
+        assertTrue(pipeline.getCancelledWork() > 0);
+        assertTrue(five.length() * 5 > charAccumulator.getValue().length());
+        assertTrue(supplyPipe.totalItems() <= 32);
+    }
+
+    @Test
     void supplier1_large_fork_accumulator1slow_print() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);

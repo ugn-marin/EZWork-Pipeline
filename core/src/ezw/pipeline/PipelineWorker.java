@@ -5,6 +5,7 @@ import ezw.concurrent.CallableRunnable;
 import ezw.concurrent.CancellableSubmitter;
 import ezw.concurrent.InterruptedRuntimeException;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +33,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Executes the worker until all internal work is done, or an exception is thrown.
+     * Executes the worker synchronously until all internal work is done, or an exception is thrown.
      * @throws Exception An exception terminating the pipeline. May come from a worker, or the cancel argument.
      */
     @Override
@@ -85,6 +86,15 @@ public abstract class PipelineWorker implements CallableRunnable {
 
     /**
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
+     * will throw an InterruptedException. Equivalent to:<br><code><pre>
+     * cancel(new InterruptedException(...));</pre></code>
+     */
+    public void interrupt() {
+        cancel(new InterruptedException("Controlled interruption."));
+    }
+
+    /**
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
      * will not throw an exception as a result of this operation. Equivalent to:<br><code><pre>
      * cancel(null);</pre></code>
      */
@@ -117,9 +127,9 @@ public abstract class PipelineWorker implements CallableRunnable {
     /**
      * Runs after all internal work is done.
      * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
-     *                  stopped by calling <code>stop</code>.
+     *                  stopped by calling <code>stop</code> or <code>cancel(null)</code>.
      * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, wrapped in a new
-     * Exception otherwise.
+     * UndeclaredThrowableException otherwise.
      */
     protected void onFinish(Throwable throwable) throws Exception {
         if (throwable == null)
@@ -128,7 +138,7 @@ public abstract class PipelineWorker implements CallableRunnable {
             throw (Error) throwable;
         else if (throwable instanceof Exception)
             throw (Exception) throwable;
-        throw new Exception(throwable);
+        throw new UndeclaredThrowableException(throwable);
     }
 
     @Override
