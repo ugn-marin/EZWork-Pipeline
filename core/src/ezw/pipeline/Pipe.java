@@ -132,8 +132,14 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
     }
 
     void clear() {
-        inOrderQueue.clear();
-        outOfOrderItems.clear();
+        for (int i = 0; totalItems() > 0; i++) {
+            final int waitTime = i * 10 + 1;
+            synchronized (lock) {
+                Interruptible.run(() -> lock.wait(waitTime));
+            }
+            inOrderQueue.clear();
+            outOfOrderItems.clear();
+        }
     }
 
     @Override

@@ -402,7 +402,7 @@ public class PipelineCoreTest {
         }
         assertTrue(pipeline.getCancelledWork() > 0);
         assertTrue(five.length() * 5 > charAccumulator.getValue().length());
-        assertTrue(supplyPipe.totalItems() <= 32);
+        assertEquals(0, supplyPipe.totalItems());
     }
 
     @Test
