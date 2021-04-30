@@ -197,7 +197,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          */
         @SafeVarargs
         public final <I> Builder<S> fork(OutputComponent<I> input, InputComponent<I>... outputs) {
-            return fork(input.getOutput(),outputs);
+            return fork(input.getOutput(), outputs);
         }
 
         /**
