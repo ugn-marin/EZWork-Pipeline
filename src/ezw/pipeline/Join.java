@@ -1,6 +1,6 @@
 package ezw.pipeline;
 
-import util.Sugar;
+import ezw.util.Sugar;
 
 import java.util.HashMap;
 import java.util.Map;
