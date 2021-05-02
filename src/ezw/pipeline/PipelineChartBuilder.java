@@ -1,6 +1,6 @@
 package ezw.pipeline;
 
-import ezw.util.Sugar;
+import util.Sugar;
 
 import java.util.*;
 import java.util.concurrent.Callable;
