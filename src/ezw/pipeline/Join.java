@@ -20,7 +20,7 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
 
     @SafeVarargs
     Join(Pipe<I> output, Pipe<I>... inputs) {
-        super(Sugar.Collections.requireNoneNull(inputs).length);
+        super(Sugar.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
         this.inputs = inputs;
