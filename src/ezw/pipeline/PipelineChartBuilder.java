@@ -37,7 +37,7 @@ class PipelineChartBuilder implements Callable<String> {
     @Override
     public String call() throws UnsupportedOperationException {
         classifyPipelineWorkers();
-        setLevel(Sugar.Collections.first(pipelineWorkers), 0);
+        setLevel(Sugar.first(pipelineWorkers), 0);
         if (leveledWorkers.size() < pipelineWorkers.size())
             warnings.add(PipelineWarning.DISCOVERY);
         summarizeLevels();
@@ -49,10 +49,10 @@ class PipelineChartBuilder implements Callable<String> {
     }
 
     private void classifyPipelineWorkers() {
-        outputComponents = Sugar.Collections.instancesOf(pipelineWorkers, OutputComponent.class);
-        inputComponents = Sugar.Collections.instancesOf(pipelineWorkers, InputComponent.class);
-        forks = Sugar.Collections.instancesOf(pipelineWorkers, Fork.class);
-        joins = Sugar.Collections.instancesOf(pipelineWorkers, Join.class);
+        outputComponents = Sugar.instancesOf(pipelineWorkers, OutputComponent.class);
+        inputComponents = Sugar.instancesOf(pipelineWorkers, InputComponent.class);
+        forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
+        joins = Sugar.instancesOf(pipelineWorkers, Join.class);
     }
 
     private void setLevel(Object pipelineWorker, int level) {

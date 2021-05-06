@@ -1,9 +1,6 @@
 package ezw.pipeline;
 
-import ezw.concurrent.BlockingThreadPoolExecutor;
-import ezw.concurrent.CallableRunnable;
-import ezw.concurrent.CancellableSubmitter;
-import ezw.concurrent.InterruptedRuntimeException;
+import ezw.concurrent.*;
 
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Objects;
@@ -115,7 +112,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * @throws InterruptedException If interrupted.
      */
     protected void join() throws InterruptedException {
-        blockingThreadPoolExecutor.join();
+        Concurrent.join(blockingThreadPoolExecutor);
     }
 
     /**

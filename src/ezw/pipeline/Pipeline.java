@@ -88,9 +88,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     protected void onFinish(Throwable throwable) throws Exception {
         setEndOfInput();
         pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(throwable));
-        Sugar.Collections.<InputComponent<?>>instancesOf(pipelineWorkers, InputComponent.class).stream()
+        Sugar.<InputComponent<?>>instancesOf(pipelineWorkers, InputComponent.class).stream()
                 .map(InputComponent::getInput).forEach(Pipe::clear);
-        Sugar.Collections.<OutputComponent<?>>instancesOf(pipelineWorkers, OutputComponent.class).stream()
+        Sugar.<OutputComponent<?>>instancesOf(pipelineWorkers, OutputComponent.class).stream()
                 .map(OutputComponent::getOutput).forEach(Pipe::clear);
         super.onFinish(throwable);
     }
@@ -253,7 +253,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
             if (pipelineWorkers.length == 0)
                 throw new IllegalArgumentException("No pipeline workers attached.");
-            this.pipelineWorkers.addAll(List.of(Sugar.Collections.requireNoneNull(pipelineWorkers)));
+            this.pipelineWorkers.addAll(List.of(Sugar.requireNoneNull(pipelineWorkers)));
             return this;
         }
     }
