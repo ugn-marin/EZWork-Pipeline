@@ -191,10 +191,12 @@ class PipelineChartBuilder implements Callable<String> {
                     String pwStr = toString.get(pw);
                     if (pwStr.contains(" --<"))
                         pwStr = pwStr.replace(" --<", " ".repeat(length - pwStr.length() + 1) + "--<");
-                    line.append(pwStr).append(" ".repeat(length - pwStr.length()));
+                    line.append(pwStr.replace("   ", " - ").replace("   ", " - "))
+                            .append(" ".repeat(length - pwStr.length()));
                 }
             }
-            lines.append(line.toString().stripTrailing().replace(">- -- ", ">---- ")).append('\n');
+            lines.append(line.toString().stripTrailing().replace(">- -- ", ">---- ")
+                    .replace("- --<", "----<")).append('\n');
         }
         return lines.toString().stripTrailing();
     }

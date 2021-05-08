@@ -43,6 +43,6 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
 
     @Override
     public String toString() {
-        return String.format("-<S%s:%d>-", predicate != null ? "?" : "", baseCapacity);
+        return String.format("-<S%s:%d>-", predicate != null ? "?" : "", getBaseCapacity());
     }
 }
