@@ -1,5 +1,6 @@
 package ezw.pipeline;
 
+import ezw.concurrent.Concurrent;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -26,7 +25,6 @@ public class PipelineTest {
     private static final int mediumCapacity = 100;
     private static final int largeCapacity = 1000;
     private static final Random random = new Random();
-    private static final ExecutorService parallelThread = Executors.newSingleThreadExecutor();
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
@@ -176,6 +174,20 @@ public class PipelineTest {
     }
 
     @Test
+    void never_started_stop() {
+        var pipeline = Pipelines.direct(() -> null, x -> {});
+        System.out.println(pipeline);
+        pipeline.stop();
+    }
+
+    @Test
+    void never_started_interrupt() {
+        var pipeline = Pipelines.direct(() -> null, x -> {});
+        System.out.println(pipeline);
+        pipeline.interrupt();
+    }
+
+    @Test
     void supplier1_minimum_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
         CharSupplier charSupplier = new CharSupplier(abc, supplyPipe, 1);
@@ -291,7 +303,7 @@ public class PipelineTest {
         };
         var pipeline = Pipelines.direct(charSupplier, charAccumulator);
         validate(pipeline);
-        var future = parallelThread.submit(pipeline.toCallable());
+        var future = Concurrent.calculate(pipeline);
         sleep(200);
         assertTrue(supplyPipe.totalItems() > mediumCapacity);
         future.get();
@@ -386,13 +398,9 @@ public class PipelineTest {
         };
         var pipeline = Pipelines.direct(charSupplier, charAccumulator);
         validate(pipeline);
-        parallelThread.submit(() -> {
-            try {
-                sleep(600);
-                pipeline.interrupt();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        Concurrent.calculate(() -> {
+            sleep(600);
+            pipeline.interrupt();
         });
         try {
             pipeline.run();
@@ -581,13 +589,9 @@ public class PipelineTest {
         var printer = new Printer<>(System.out, toPrint, 1);
         var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
         validate(pipeline);
-        parallelThread.submit(() -> {
-            try {
-                sleep(600);
-                pipeline.cancel(new NumberFormatException("My cancellation message"));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        Concurrent.calculate(() -> {
+            sleep(600);
+            pipeline.cancel(new NumberFormatException("My cancellation message"));
         });
         try {
             pipeline.run();
@@ -757,15 +761,11 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
-        parallelThread.submit(() -> {
-            try {
-                for (char c : full.toCharArray()) {
-                    pipeline.push(c);
-                }
-                pipeline.setEndOfInput();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Concurrent.calculate(() -> {
+            for (char c : full.toCharArray()) {
+                pipeline.push(c);
             }
+            pipeline.setEndOfInput();
         });
         pipeline.run();
         assertEquals(full, consumer.getValue());
@@ -790,16 +790,12 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
-        parallelThread.submit(() -> {
-            try {
-                for (char c : full.toCharArray()) {
-                    pipeline.push(c);
-                }
-                sleep(100);
-                pipeline.stop();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Concurrent.calculate(() -> {
+            for (char c : full.toCharArray()) {
+                pipeline.push(c);
             }
+            sleep(100);
+            pipeline.stop();
         });
         pipeline.run();
         assertTrue(full.startsWith(consumer.getValue()));
@@ -824,16 +820,12 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(mediumCapacity), consumer, printer);
         validate(pipeline);
-        parallelThread.submit(() -> {
-            try {
-                for (char c : full.toCharArray()) {
-                    pipeline.push(c);
-                }
-                sleep(1000);
-                pipeline.stop();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Concurrent.calculate(() -> {
+            for (char c : full.toCharArray()) {
+                pipeline.push(c);
             }
+            sleep(1000);
+            pipeline.stop();
         });
         pipeline.run();
         assertEquals(25, pipeline.getCancelledWork());
