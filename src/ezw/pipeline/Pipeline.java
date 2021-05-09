@@ -164,7 +164,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Creates a fork from the input pipe into the output pipes.
          * @param input The input pipe.
-         * @param outputs The output pipes
+         * @param outputs The output pipes.
          * @param <I> The items type.
          * @return This builder.
          */
@@ -203,7 +203,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Creates a join from the input pipes into the output pipe.
          * @param output The output pipe.
-         * @param inputs The input pipes
+         * @param inputs The input pipes.
          * @param <I> The items type.
          * @return This builder.
          */
@@ -241,7 +241,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Attaches one or more consumers to the pipeline.
-         * @param consumers One or more consumers
+         * @param consumers One or more consumers.
          * @param <I> The input items type.
          * @return The pipeline.
          */

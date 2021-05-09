@@ -1,9 +1,11 @@
 package ezw.pipeline;
 
 import ezw.concurrent.*;
+import ezw.util.Lazy;
 
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -11,22 +13,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A callable runnable executing in a pipeline.
  */
 public abstract class PipelineWorker implements CallableRunnable {
-    private final BlockingThreadPoolExecutor blockingThreadPoolExecutor;
-    private final CancellableSubmitter cancellableSubmitter;
+    private final int parallel;
+    private final Lazy<ExecutorService> executorService;
+    private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
     PipelineWorker(int parallel) {
-        blockingThreadPoolExecutor = new BlockingThreadPoolExecutor(parallel);
-        cancellableSubmitter = new CancellableSubmitter(blockingThreadPoolExecutor);
+        this.parallel = parallel;
+        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(parallel));
+        cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 
     /**
      * Returns the parallel level.
      */
     protected int getParallel() {
-        return blockingThreadPoolExecutor.getMaximumPoolSize();
+        return parallel;
     }
 
     /**
@@ -54,7 +58,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * @throws InterruptedRuntimeException If interrupted while trying to submit the work.
      */
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
-        cancellableSubmitter.submit(() -> {
+        cancellableSubmitter.get().submit(() -> {
             try {
                 return work.toCallable().call();
             } catch (Throwable t) {
@@ -65,7 +69,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     private void setThrowable(Throwable throwable) {
-        synchronized (blockingThreadPoolExecutor) {
+        synchronized (executorService) {
             if (this.throwable == null)
                 this.throwable = throwable;
         }
@@ -77,8 +81,11 @@ public abstract class PipelineWorker implements CallableRunnable {
      */
     public void cancel(Throwable throwable) {
         setThrowable(Objects.requireNonNullElse(throwable, new SilentStop()));
-        blockingThreadPoolExecutor.shutdown();
-        cancelledWork.addAndGet(cancellableSubmitter.cancelSubmitted());
+        if (executorService.isCalculated()) {
+            executorService.get().shutdown();
+            if (cancellableSubmitter.isCalculated())
+                cancelledWork.addAndGet(cancellableSubmitter.get().cancelSubmitted());
+        }
     }
 
     /**
@@ -112,7 +119,8 @@ public abstract class PipelineWorker implements CallableRunnable {
      * @throws InterruptedException If interrupted.
      */
     protected void join() throws InterruptedException {
-        Concurrent.join(blockingThreadPoolExecutor);
+        if (executorService.isCalculated())
+            Concurrent.join(executorService.get());
     }
 
     /**
