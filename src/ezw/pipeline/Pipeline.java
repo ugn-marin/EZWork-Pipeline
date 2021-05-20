@@ -126,7 +126,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         @SafeVarargs
         private Builder(Supplier<S>... suppliers) {
-            var supplyPipes = Arrays.stream(suppliers).map(Supplier::getOutput).collect(Collectors.toSet());
+            var supplyPipes = Arrays.stream(Sugar.requireNonEmpty(suppliers)).map(Supplier::getOutput)
+                    .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
                 throw new IllegalArgumentException("The pipeline suppliers must feed exactly 1 supply pipe.");
             supplyPipe = (SupplyPipe<S>) supplyPipes.stream().findFirst().get();
@@ -184,7 +185,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> fork(Pipe<I> input, InputComponent<I>... outputs) {
-            return fork(input, Arrays.stream(outputs).map(InputComponent::getInput).toArray(Pipe[]::new));
+            return fork(input, Arrays.stream(Sugar.requireNonEmpty(outputs)).map(InputComponent::getInput)
+                    .toArray(Pipe[]::new));
         }
 
         /**
@@ -223,7 +225,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> join(Pipe<I> output, OutputComponent<I>... inputs) {
-            return join(output, Arrays.stream(inputs).map(OutputComponent::getOutput).toArray(Pipe[]::new));
+            return join(output, Arrays.stream(Sugar.requireNonEmpty(inputs)).map(OutputComponent::getOutput)
+                    .toArray(Pipe[]::new));
         }
 
         /**
@@ -251,9 +254,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
-            if (pipelineWorkers.length == 0)
-                throw new IllegalArgumentException("No pipeline workers attached.");
-            this.pipelineWorkers.addAll(List.of(Sugar.requireNoneNull(pipelineWorkers)));
+            this.pipelineWorkers.addAll(List.of(Sugar.requireNoneNull(Sugar.requireNonEmpty(pipelineWorkers))));
             return this;
         }
     }
