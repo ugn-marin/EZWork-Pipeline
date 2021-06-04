@@ -31,9 +31,8 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
 
     @Override
     public void push(I item) throws InterruptedException {
-        if (predicate == null || predicate.test(item)) {
+        if (predicate == null || predicate.test(item))
             super.push(new IndexedItem<>(index.getAndIncrement(), item, true));
-        }
     }
 
     @Override

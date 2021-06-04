@@ -71,7 +71,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     private void setThrowable(Throwable throwable) {
         synchronized (executorService) {
             if (this.throwable == null)
-                this.throwable = throwable;
+                this.throwable = Objects.requireNonNullElse(throwable, new SilentStop());
         }
     }
 
@@ -80,7 +80,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage.
      */
     public void cancel(Throwable throwable) {
-        setThrowable(Objects.requireNonNullElse(throwable, new SilentStop()));
+        setThrowable(throwable);
         if (executorService.isCalculated()) {
             executorService.get().shutdown();
             if (cancellableSubmitter.isCalculated())
@@ -90,8 +90,7 @@ public abstract class PipelineWorker implements CallableRunnable {
 
     /**
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
-     * will throw an InterruptedException. Equivalent to:<br><code><pre>
-     * cancel(new InterruptedException(...));</pre></code>
+     * will throw an InterruptedException.
      */
     public void interrupt() {
         cancel(new InterruptedException("Controlled interruption."));
