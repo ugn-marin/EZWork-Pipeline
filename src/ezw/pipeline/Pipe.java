@@ -121,7 +121,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         return true;
     }
 
-    private IndexedItem<I> poll() throws InterruptedException {
+    private IndexedItem<I> take() throws InterruptedException {
         while (!endOfInput) {
             IndexedItem<I> indexedItem = inOrderQueue.poll(POLLING_TIMEOUT, TimeUnit.MILLISECONDS);
             if (indexedItem != null)
@@ -164,7 +164,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
 
         @Override
         public boolean hasNext() throws InterruptedRuntimeException {
-            return (next = Interruptible.call(Pipe.this::poll)) != null;
+            return (next = Interruptible.call(Pipe.this::take)) != null;
         }
 
         @Override
