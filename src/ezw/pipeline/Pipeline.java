@@ -74,8 +74,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Pushing an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
-     * this method might be used for additional supply for a closed pipeline as well.
+     * Pushes an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
+     * might be used for additional supply for a closed pipeline as well.
      * @param item The item.
      * @throws InterruptedException If interrupted while attempting to push the item.
      */
@@ -96,7 +96,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Mark end of input for the pipeline supply. The pipeline will stop after all workers finish handling the items
+     * Marks end of input for the pipeline supply. The pipeline will stop after all workers finish handling the items
      * already in the pipes. Use for open pipelines only: If the pipeline has suppliers, they may fail on trying to push
      * after end of input.
      */

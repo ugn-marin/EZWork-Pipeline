@@ -1,7 +1,6 @@
 package ezw.pipeline;
 
 import ezw.concurrent.*;
-import ezw.util.Lazy;
 
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Objects;
