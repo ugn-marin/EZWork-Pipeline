@@ -12,6 +12,10 @@ class PipelineChartBuilder implements Callable<String> {
     private final Map<Integer, List<Object>> levelsAggregation;
     private final Predicate<Object> notLeveledCheck;
     private final Set<PipelineWarning> warnings;
+    private final Map<Pipe<?>, Integer> pipeRows;
+    private final Set<Pipe<?>> outputPipes;
+    private final Map<Pipe<?>, Integer> pipeOutputLevels;
+    private final Map<Pipe<?>, Integer> pipeInputLevels;
 
     private Set<OutputComponent<?>> outputComponents;
     private Set<InputComponent<?>> inputComponents;
@@ -28,6 +32,10 @@ class PipelineChartBuilder implements Callable<String> {
         levelsAggregation = new HashMap<>(2);
         notLeveledCheck = Predicate.not(leveledWorkers::contains);
         warnings = new HashSet<>(1);
+        pipeRows = new HashMap<>(pipelineWorkers.size());
+        outputPipes = new HashSet<>(pipelineWorkers.size());
+        pipeOutputLevels = new HashMap<>(pipelineWorkers.size());
+        pipeInputLevels = new HashMap<>(pipelineWorkers.size());
     }
 
     Set<PipelineWarning> getWarnings() {
@@ -110,49 +118,48 @@ class PipelineChartBuilder implements Callable<String> {
     }
 
     private void buildChartMatrix(Map<Object, String> toString, int[] levelsLength) {
-        Map<Pipe<?>, Integer> pipeRows = new HashMap<>();
-        Set<Pipe<?>> outputPipes = new HashSet<>();
-        Map<Pipe<?>, Integer> pipeOutputLevels = new HashMap<>();
-        Map<Pipe<?>, Integer> pipeInputLevels = new HashMap<>();
         for (int level = minLevel; level <= maxLevel; level++) {
             List<Object> pws = levelsAggregation.get(level);
             pws.sort(Comparator.comparing(Object::toString));
             Map<Integer, Integer> rowSwaps = new HashMap<>(maxLevelSize / 2);
             for (int row = 0; row < pws.size(); row++) {
                 Object pw = pws.get(row);
-                String pwStr = pw.toString();
-                int newRow = row;
-                Pipe<?> pipe;
-                if (pw instanceof OutputComponent) {
-                    pipe = ((OutputComponent<?>) pw).getOutput();
-                    if (!pipeRows.containsKey(pipe))
-                        pwStr = String.format("%s -%s", pwStr, pipe);
-                    setPipeRow(pipe, pipeRows, row);
-                    detectPipeCycle(pipe, pipeOutputLevels, level);
-                    if (!outputPipes.add(pipe))
-                        warnings.add(PipelineWarning.MULTIPLE_INPUTS);
-                }
-                if (pw instanceof InputComponent) {
-                    pipe = ((InputComponent<?>) pw).getInput();
-                    if (!pipeRows.containsKey(pipe))
-                        pwStr = String.format("%s- %s", pipe, pwStr);
-                    else
-                        pwStr = String.format("-- %s", pwStr);
-                    newRow = setPipeRow(pipe, pipeRows, row);
-                    detectPipeCycle(pipe, pipeInputLevels, level);
-                }
+                String pwStr = getString(pw, level, row, rowSwaps);
+                toString.put(pw, pwStr);
                 if (pwStr.length() > levelsLength[level - minLevel])
                     levelsLength[level - minLevel] = pwStr.length();
-                if (newRow != row)
-                    rowSwaps.put(newRow, row);
                 chartMatrix[level - minLevel][row] = pw;
-                toString.put(pw, pwStr);
             }
             doLevelSwaps(level, rowSwaps);
         }
     }
 
-    private Integer setPipeRow(Pipe<?> pipe, Map<Pipe<?>, Integer> pipeRows, Integer row) {
+    private String getString(Object pipelineWorker, int level, int row, Map<Integer, Integer> rowSwaps) {
+        String pwStr = pipelineWorker.toString();
+        int newRow = row;
+        Pipe<?> pipe;
+        if (pipelineWorker instanceof OutputComponent) {
+            pipe = ((OutputComponent<?>) pipelineWorker).getOutput();
+            if (!pipeRows.containsKey(pipe))
+                pwStr = String.format("%s %s", pwStr, pipe);
+            setPipeRow(pipe, row);
+            detectPipeCycle(pipe, pipeOutputLevels, level);
+            if (!outputPipes.add(pipe))
+                warnings.add(PipelineWarning.MULTIPLE_INPUTS);
+        }
+        if (pipelineWorker instanceof InputComponent) {
+            pipe = ((InputComponent<?>) pipelineWorker).getInput();
+            if (!pipeRows.containsKey(pipe))
+                pwStr = String.format("%s %s", pipe, pwStr);
+            newRow = setPipeRow(pipe, row);
+            detectPipeCycle(pipe, pipeInputLevels, level);
+        }
+        if (newRow != row)
+            rowSwaps.put(newRow, row);
+        return pwStr;
+    }
+
+    private Integer setPipeRow(Pipe<?> pipe, Integer row) {
         if (pipeRows.containsKey(pipe))
             row = pipeRows.get(pipe);
         else
@@ -189,14 +196,13 @@ class PipelineChartBuilder implements Callable<String> {
                     line.append(" ".repeat(length));
                 } else {
                     String pwStr = toString.get(pw);
-                    if (pwStr.contains(" --<"))
-                        pwStr = pwStr.replace(" --<", " ".repeat(length - pwStr.length() + 1) + "--<");
-                    line.append(pwStr.replace("   ", " - ").replace("   ", " - "))
+                    if (pwStr.contains(" -<"))
+                        pwStr = pwStr.replace(" -<", " ".repeat(length - pwStr.length() + 1) + "-<");
+                    line.append(pwStr.replace("  ", " -").replace("- -", "---"))
                             .append(" ".repeat(length - pwStr.length()));
                 }
             }
-            lines.append(line.toString().stripTrailing().replace(">- -- ", ">---- ")
-                    .replace("- --<", "----<")).append('\n');
+            lines.append(line.toString().stripTrailing().replace("- -", "---")).append('\n');
         }
         return lines.toString().stripTrailing();
     }
