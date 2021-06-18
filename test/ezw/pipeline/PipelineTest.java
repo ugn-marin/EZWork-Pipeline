@@ -454,7 +454,7 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator);
         validate(pipeline);
-        assertEquals(15, pipeline.getPotentialThreads());
+        assertEquals(8, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
     }
@@ -488,7 +488,7 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator, new Printer<>(System.out, toPrint, 2));
         validate(pipeline);
-        assertEquals(24, pipeline.getPotentialThreads());
+        assertEquals(14, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
     }
@@ -537,7 +537,7 @@ public class PipelineTest {
 
         var pipeline = builder.fork(mix, toAccum, toPrint).into(charAccumulator, printer);
         validate(pipeline);
-        assertEquals(24, pipeline.getPotentialThreads());
+        assertEquals(15, pipeline.getWorkersParallel());
         pipeline.run();
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
@@ -827,7 +827,8 @@ public class PipelineTest {
             sleep(1000);
             pipeline.stop();
         });
+        assertEquals(22, pipeline.getWorkersParallel());
         pipeline.run();
-        assertEquals(25, pipeline.getCancelledWork());
+        assertEquals(22, pipeline.getCancelledWork());
     }
 }

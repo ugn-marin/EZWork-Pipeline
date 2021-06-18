@@ -42,8 +42,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
-        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on up to %d threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getPotentialThreads()));
+        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
+                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getWorkersParallel()));
         pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
             sb.append(pipelineChartBuilder.call());
@@ -57,15 +57,15 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Returns the maximum number of auto-allocated threads that this pipeline and its workers may use.
+     * Returns the maximum number of auto-allocated threads that this pipeline's workers can use.
      */
-    public int getPotentialThreads() {
-        return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum() + getParallel() + 1;
+    public int getWorkersParallel() {
+        return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum();
     }
 
     @Override
     public int getCancelledWork() {
-        return super.getCancelledWork() + pipelineWorkers.stream().mapToInt(PipelineWorker::getCancelledWork).sum();
+        return pipelineWorkers.stream().mapToInt(PipelineWorker::getCancelledWork).sum();
     }
 
     @Override
@@ -126,7 +126,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         @SafeVarargs
         private Builder(Supplier<S>... suppliers) {
-            var supplyPipes = Arrays.stream(Sugar.requireNonEmpty(suppliers)).map(Supplier::getOutput)
+            var supplyPipes = Arrays.stream(Sugar.requireFull(suppliers)).map(Supplier::getOutput)
                     .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
                 throw new IllegalArgumentException("The pipeline suppliers must feed exactly 1 supply pipe.");
@@ -185,7 +185,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> fork(Pipe<I> input, InputComponent<I>... outputs) {
-            return fork(input, Arrays.stream(Sugar.requireNonEmpty(outputs)).map(InputComponent::getInput)
+            return fork(input, Arrays.stream(Sugar.requireFull(outputs)).map(InputComponent::getInput)
                     .toArray(Pipe[]::new));
         }
 
@@ -225,7 +225,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> join(Pipe<I> output, OutputComponent<I>... inputs) {
-            return join(output, Arrays.stream(Sugar.requireNonEmpty(inputs)).map(OutputComponent::getOutput)
+            return join(output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputComponent::getOutput)
                     .toArray(Pipe[]::new));
         }
 
@@ -254,7 +254,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
-            this.pipelineWorkers.addAll(List.of(Sugar.requireNoneNull(Sugar.requireNonEmpty(pipelineWorkers))));
+            this.pipelineWorkers.addAll(List.of(Sugar.requireFull(pipelineWorkers)));
             return this;
         }
     }
