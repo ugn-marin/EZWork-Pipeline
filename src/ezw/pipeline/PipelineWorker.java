@@ -97,8 +97,10 @@ public abstract class PipelineWorker implements CallableRunnable {
 
     /**
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
-     * will not throw an exception as a result of this operation. Equivalent to:<br><code><pre>
-     * cancel(null);</pre></code>
+     * will not throw an exception as a result of this operation. Equivalent to:<br>
+     * <pre>
+     * cancel(null);
+     * </pre>
      */
     public void stop() {
         cancel(null);
