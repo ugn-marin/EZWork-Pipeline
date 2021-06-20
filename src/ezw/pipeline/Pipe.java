@@ -77,6 +77,13 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         return inPush.get();
     }
 
+    /**
+     * Returns the number of items pushed into the queue (that passed the in-push and arrangement phases).
+     */
+    public long getItemsPushed() {
+        return expectedIndex;
+    }
+
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
         inPush.incrementAndGet();
         try {
