@@ -57,7 +57,11 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Returns the maximum number of auto-allocated threads that this pipeline's workers can use.
+     * Returns the maximum number of auto-allocated threads that this pipeline's workers can use. That doesn't include
+     * the threads managing and joining the workers and the pipeline itself, which would be (total threads used):<br>
+     * <pre>
+     * pipeline.getWorkersParallel() + pipeline.getParallel() + 1;
+     * </pre>
      */
     public int getWorkersParallel() {
         return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum();
