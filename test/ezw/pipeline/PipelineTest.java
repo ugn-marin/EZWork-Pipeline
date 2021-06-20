@@ -491,6 +491,12 @@ public class PipelineTest {
         assertEquals(14, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(five.length(), supplyPipe.getItemsPushed());
+        assertEquals(five.length(), upper.getItemsPushed());
+        assertEquals(five.length(), lower.getItemsPushed());
+        assertEquals(five.length(), toLower.getItemsPushed());
+        assertEquals(five.length(), toIdentity.getItemsPushed());
+        assertEquals(30, hyphens.getItemsPushed());
     }
 
     @Test
@@ -542,6 +548,9 @@ public class PipelineTest {
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
         assertEquals(0, pipeline.getCancelledWork());
+        assertEquals(five.length(), supplyPipe.getItemsPushed());
+        assertEquals(five.length(), upper.getItemsPushed());
+        assertEquals(five.length(), lower.getItemsPushed());
     }
 
     @Test
@@ -624,6 +633,9 @@ public class PipelineTest {
         var printer = new Printer<>(System.out, toPrint, 1);
         Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).run();
         assertEquals(125, wordsCount.get());
+        assertEquals(125, toAccum.getItemsPushed());
+        assertEquals(125, toPrint.getItemsPushed());
+        assertEquals(five.length(), supplier.getOutput().getItemsPushed());
     }
 
     @Test
@@ -697,7 +709,8 @@ public class PipelineTest {
         System.out.println(pipeline);
         assertTrue(pipeline.getWarnings().contains(PipelineWarning.MULTIPLE_INPUTS));
         pipeline.run();
-        assertEquals("------------", accum.getValue());
+        assertEquals("-".repeat(12), accum.getValue());
+        assertEquals(12, supplyPipe.getItemsPushed());
         assertEquals(0, pipeline.getCancelledWork());
     }
 
