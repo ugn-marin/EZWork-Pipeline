@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
-    private final PipelineChartBuilder pipelineChartBuilder;
+    private final Set<PipelineWarning> pipelineWarnings;
     private final String toString;
 
     /**
@@ -44,13 +44,14 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size(), getWorkersParallel()));
-        pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
+        var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
             sb.append(pipelineChartBuilder.call());
         } catch (Exception e) {
             sb.append(e.getMessage());
         }
-        for (PipelineWarning warning : pipelineChartBuilder.getWarnings()) {
+        pipelineWarnings = pipelineChartBuilder.getWarnings();
+        for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append(warning.getDescription());
         }
         toString = sb.toString();
@@ -112,7 +113,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * Returns the warnings detected on the pipeline construction.
      */
     public Set<PipelineWarning> getWarnings() {
-        return pipelineChartBuilder.getWarnings();
+        return new LinkedHashSet<>(pipelineWarnings);
     }
 
     @Override

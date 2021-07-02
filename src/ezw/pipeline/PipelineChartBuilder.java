@@ -31,7 +31,7 @@ class PipelineChartBuilder implements Callable<String> {
         leveledWorkers = new HashSet<>(pipelineWorkers.size());
         levelsAggregation = new HashMap<>(2);
         notLeveledCheck = Predicate.not(leveledWorkers::contains);
-        warnings = new HashSet<>(1);
+        warnings = new LinkedHashSet<>(1);
         pipeRows = new HashMap<>(pipelineWorkers.size());
         outputPipes = new HashSet<>(pipelineWorkers.size());
         pipeOutputLevels = new HashMap<>(pipelineWorkers.size());
