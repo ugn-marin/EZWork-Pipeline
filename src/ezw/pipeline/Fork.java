@@ -7,8 +7,8 @@ import java.util.Objects;
 
 /**
  * A pipeline worker sending the input item reference to several output pipes simultaneously. The fork can create a new
- * index scope for any output pipe that is a conditional supply pipe. Every supply pipe is pushed into synchronously,
- * potentially blocking other available pipes pushing.
+ * index scope for any output pipe that is a conditional supply pipe. Every supply pipe is pushed into synchronously to
+ * enforce the items order, potentially blocking other available pipes pushing.
  * @param <I> The items type.
  */
 final class Fork<I> extends PipelineWorker implements InputComponent<I> {
@@ -17,8 +17,7 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
 
     @SafeVarargs
     Fork(Pipe<I> input, Pipe<I>... outputs) {
-        super(Math.max(1, (int) Arrays.stream(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyPipe))
-                .count()));
+        super((int) Arrays.stream(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyPipe)).count());
         if (outputs.length < 2)
             throw new IllegalArgumentException("Fork requires at least 2 output pipes.");
         this.input = Objects.requireNonNull(input, "Input pipe is required.");

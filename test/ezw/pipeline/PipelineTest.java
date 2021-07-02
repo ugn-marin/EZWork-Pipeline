@@ -742,7 +742,7 @@ public class PipelineTest {
                 super.accept(item);
             }
         };
-        var accum2 = new CharAccumulator(new SupplyPipe<>(minimumCapacity, c -> c != '-'), 1) {
+        var accum2 = new CharAccumulator(new SupplyPipe<>(smallCapacity, c -> c != '-'), 1) {
             @Override
             protected void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 300);
