@@ -39,7 +39,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     @Override
     public void run() throws Exception {
         if (executed.getAndSet(true))
-            throw new UnsupportedOperationException("The pipeline worker instance cannot be reused.");
+            throw new IllegalStateException("The pipeline worker instance cannot be reused.");
         try {
             work();
             join();
@@ -133,7 +133,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * Runs after all internal work is done.
      * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
      *                  stopped by calling <code>stop</code> or <code>cancel(null)</code>.
-     * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, wrapped in a new
+     * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, or wrapped in a new
      * UndeclaredThrowableException otherwise.
      */
     protected void onFinish(Throwable throwable) throws Exception {

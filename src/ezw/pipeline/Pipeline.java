@@ -50,6 +50,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
             sb.append(pipelineChartBuilder.call());
         } catch (Exception e) {
             sb.append(e.getMessage());
+            pipelineChartBuilder.getWarnings().add(PipelineWarning.DISCOVERY);
         }
         pipelineWarnings = pipelineChartBuilder.getWarnings();
         for (PipelineWarning warning : pipelineWarnings) {
@@ -78,7 +79,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Pushes an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
-     * might be used for additional supply for a closed pipeline as well.
+     * might be used for additional supply for a closed pipeline as well, as long as end of input wasn't reached.
      * @param item The item.
      * @throws InterruptedException If interrupted while attempting to push the item.
      */

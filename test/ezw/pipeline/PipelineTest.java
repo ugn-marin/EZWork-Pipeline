@@ -150,7 +150,7 @@ public class PipelineTest {
             pipeline.run();
             pipeline.run();
             fail();
-        } catch (UnsupportedOperationException e) {
+        } catch (IllegalStateException e) {
             System.out.println(e.getMessage());
         }
     }

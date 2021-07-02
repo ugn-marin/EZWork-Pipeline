@@ -43,7 +43,7 @@ class PipelineChartBuilder implements Callable<String> {
     }
 
     @Override
-    public String call() throws UnsupportedOperationException {
+    public String call() {
         classifyPipelineWorkers();
         setLevel(Sugar.first(pipelineWorkers), 0);
         if (leveledWorkers.size() < pipelineWorkers.size())
