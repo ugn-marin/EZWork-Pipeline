@@ -197,6 +197,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc, charAccumulator.getValue());
+        assertTrue(pipeline.toString().contains("Pipeline of 2 workers on 2 working threads:"));
     }
 
     @Test
@@ -332,6 +333,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.length() * 5, charAccumulator.getValue().length());
+        assertTrue(pipeline.toString().contains("Pipeline of 2 workers on 25 working threads:"));
     }
 
     @Test
@@ -430,6 +432,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five, charAccumulator.getValue());
+        assertTrue(pipeline.toString().contains("Pipeline of 3 workers on 3 working threads:"));
     }
 
     @Test
@@ -455,7 +458,7 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator);
         validate(pipeline);
-        assertEquals(8, pipeline.getWorkersParallel());
+        assertEquals(4, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
     }
@@ -489,7 +492,7 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator, new Printer<>(System.out, toPrint, 2));
         validate(pipeline);
-        assertEquals(14, pipeline.getWorkersParallel());
+        assertEquals(8, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
         assertEquals(five.length(), supplyPipe.getItemsPushed());
@@ -544,7 +547,7 @@ public class PipelineTest {
 
         var pipeline = builder.fork(mix, toAccum, toPrint).into(charAccumulator, printer);
         validate(pipeline);
-        assertEquals(15, pipeline.getWorkersParallel());
+        assertEquals(9, pipeline.getWorkersParallel());
         pipeline.run();
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
@@ -841,9 +844,9 @@ public class PipelineTest {
             sleep(1000);
             pipeline.stop();
         });
-        assertEquals(22, pipeline.getWorkersParallel());
+        assertEquals(20, pipeline.getWorkersParallel());
         pipeline.run();
-        assertEquals(22, pipeline.getCancelledWork());
+        assertEquals(20, pipeline.getCancelledWork());
     }
 
     @Test

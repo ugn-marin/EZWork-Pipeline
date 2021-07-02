@@ -6,12 +6,12 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * A pipeline worker sending the input item reference to several output pipes simultaneously. The fork can create a new
+ * A pipe connector sending the input item reference to several output pipes simultaneously. The fork can create a new
  * index scope for any output pipe that is a conditional supply pipe. Every supply pipe is pushed into synchronously to
  * enforce the items order, potentially blocking other available pipes pushing.
  * @param <I> The items type.
  */
-final class Fork<I> extends PipelineWorker implements InputComponent<I> {
+final class Fork<I> extends PipeConnector implements InputComponent<I> {
     private final Pipe<I> input;
     private final Pipe<I>[] outputs;
 
@@ -49,10 +49,5 @@ final class Fork<I> extends PipelineWorker implements InputComponent<I> {
     protected void join() throws InterruptedException {
         super.join();
         Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
-    }
-
-    @Override
-    public String toString() {
-        return "fork";
     }
 }

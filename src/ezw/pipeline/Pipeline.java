@@ -42,8 +42,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
+        int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getWorkersParallel()));
+                "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
         var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
             sb.append(pipelineChartBuilder.call());
@@ -59,10 +60,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Returns the maximum number of auto-allocated threads that this pipeline's workers can use. That doesn't include
-     * the threads managing and joining the workers and the pipeline itself, which would be (total threads used):<br>
-     * <pre>
-     * pipeline.getWorkersParallel() + pipeline.getParallel() + 1;
-     * </pre>
+     * the threads managing and joining the workers, and the various pipe connectors.
      */
     public int getWorkersParallel() {
         return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum();
