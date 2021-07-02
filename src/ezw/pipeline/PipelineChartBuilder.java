@@ -31,7 +31,7 @@ class PipelineChartBuilder implements Callable<String> {
         leveledWorkers = new HashSet<>(pipelineWorkers.size());
         levelsAggregation = new HashMap<>(2);
         notLeveledCheck = Predicate.not(leveledWorkers::contains);
-        warnings = new HashSet<>(1);
+        warnings = new LinkedHashSet<>(1);
         pipeRows = new HashMap<>(pipelineWorkers.size());
         outputPipes = new HashSet<>(pipelineWorkers.size());
         pipeOutputLevels = new HashMap<>(pipelineWorkers.size());
@@ -120,7 +120,7 @@ class PipelineChartBuilder implements Callable<String> {
     private void buildChartMatrix(Map<Object, String> toString, int[] levelsLength) {
         for (int level = minLevel; level <= maxLevel; level++) {
             List<Object> pws = levelsAggregation.get(level);
-            pws.sort(Comparator.comparing(Object::toString));
+            pws.sort(Comparator.comparing(this::getSortingString));
             Map<Integer, Integer> rowSwaps = new HashMap<>(maxLevelSize / 2);
             for (int row = 0; row < pws.size(); row++) {
                 Object pw = pws.get(row);
@@ -132,6 +132,15 @@ class PipelineChartBuilder implements Callable<String> {
             }
             doLevelSwaps(level, rowSwaps);
         }
+    }
+
+    private String getSortingString(Object pipelineWorker) {
+        String pwStr = pipelineWorker.toString();
+        if (pipelineWorker instanceof OutputComponent)
+            pwStr += ((OutputComponent<?>) pipelineWorker).getOutput();
+        if (pipelineWorker instanceof InputComponent)
+            pwStr += ((InputComponent<?>) pipelineWorker).getInput();
+        return pwStr;
     }
 
     private String getString(Object pipelineWorker, int level, int row, Map<Integer, Integer> rowSwaps) {

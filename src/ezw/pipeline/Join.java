@@ -7,12 +7,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A pipeline worker joining input items from several pipes into one output pipe. All input pipes must be in the same
+ * A pipe connector joining input items from several pipes into one output pipe. All input pipes must be in the same
  * index scope. An item is pushed once it was received from all input pipes. If any of the input items with a given
  * index is marked modified, the first modified item is pushed, else the last received item is pushed.
  * @param <I> The items type.
  */
-final class Join<I> extends PipelineWorker implements OutputComponent<I> {
+final class Join<I> extends PipeConnector implements OutputComponent<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
     private final Map<Long, Integer> remainingInputs;
@@ -83,10 +83,5 @@ final class Join<I> extends PipelineWorker implements OutputComponent<I> {
             }
         }
         output.push(modified != null ? modified : indexedItem);
-    }
-
-    @Override
-    public String toString() {
-        return "join";
     }
 }

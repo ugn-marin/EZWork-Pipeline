@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
-    private final PipelineChartBuilder pipelineChartBuilder;
+    private final Set<PipelineWarning> pipelineWarnings;
     private final String toString;
 
     /**
@@ -42,15 +42,17 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
+        int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size(), getWorkersParallel()));
-        pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
+                "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
+        var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         try {
             sb.append(pipelineChartBuilder.call());
         } catch (Exception e) {
             sb.append(e.getMessage());
         }
-        for (PipelineWarning warning : pipelineChartBuilder.getWarnings()) {
+        pipelineWarnings = pipelineChartBuilder.getWarnings();
+        for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append(warning.getDescription());
         }
         toString = sb.toString();
@@ -58,10 +60,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Returns the maximum number of auto-allocated threads that this pipeline's workers can use. That doesn't include
-     * the threads managing and joining the workers and the pipeline itself, which would be (total threads used):<br>
-     * <pre>
-     * pipeline.getWorkersParallel() + pipeline.getParallel() + 1;
-     * </pre>
+     * the threads managing and joining the workers, and the various pipe connectors.
      */
     public int getWorkersParallel() {
         return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum();
@@ -112,7 +111,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * Returns the warnings detected on the pipeline construction.
      */
     public Set<PipelineWarning> getWarnings() {
-        return pipelineChartBuilder.getWarnings();
+        return new LinkedHashSet<>(pipelineWarnings);
     }
 
     @Override
