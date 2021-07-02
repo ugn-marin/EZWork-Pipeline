@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.concurrent.Concurrent;
 import ezw.pipeline.workers.*;
+import ezw.util.Sugar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -843,5 +844,24 @@ public class PipelineTest {
         assertEquals(22, pipeline.getWorkersParallel());
         pipeline.run();
         assertEquals(22, pipeline.getCancelledWork());
+    }
+
+    @Test
+    void open_star_push_nulls() throws Exception {
+        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1);
+        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1);
+        final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
+        validate(pipeline);
+        Concurrent.calculate(() -> {
+            for (char c : full.toCharArray()) {
+                pipeline.push(c);
+                pipeline.push(null);
+            }
+            pipeline.setEndOfInput();
+        });
+        pipeline.run();
+        assertEquals(full.length() * 5, consumer.getValue().length());
+        assertEquals(full, Sugar.remove(consumer.getValue(), "null"));
+        assertEquals(0, pipeline.getCancelledWork());
     }
 }
