@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.util.function.UnsafeFunction;
+
 import java.util.Objects;
 
 /**
@@ -8,7 +10,8 @@ import java.util.Objects;
  * @param <I> The input items type.
  * @param <O> The output items type.
  */
-public abstract class Function<I, O> extends PipelineWorker implements InputComponent<I>, OutputComponent<O> {
+public abstract class Function<I, O> extends PipelineWorker implements UnsafeFunction<I, O>, InputComponent<I>,
+        OutputComponent<O> {
     private final Pipe<I> input;
     private final Pipe<O> output;
 
@@ -64,5 +67,5 @@ public abstract class Function<I, O> extends PipelineWorker implements InputComp
      * @return The output item.
      * @throws Exception An exception terminating the pipeline.
      */
-    protected abstract O apply(I item) throws Exception;
+    public abstract O apply(I item) throws Exception;
 }

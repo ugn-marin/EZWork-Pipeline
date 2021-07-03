@@ -10,7 +10,7 @@ public class CharUpperFunction extends Function<Character, Character> {
     }
 
     @Override
-    protected Character apply(Character item) throws InterruptedException {
+    public Character apply(Character item) throws InterruptedException {
         return Character.toUpperCase(item);
     }
 }

@@ -3,10 +3,10 @@ package ezw.pipeline;
 import ezw.util.Sugar;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-class PipelineChartBuilder implements Callable<String> {
+class PipelineChartBuilder implements Supplier<String> {
     private final List<PipelineWorker> pipelineWorkers;
     private final Set<Object> leveledWorkers;
     private final Map<Integer, List<Object>> levelsAggregation;
@@ -43,7 +43,7 @@ class PipelineChartBuilder implements Callable<String> {
     }
 
     @Override
-    public String call() throws UnsupportedOperationException {
+    public String get() {
         classifyPipelineWorkers();
         setLevel(Sugar.first(pipelineWorkers), 0);
         if (leveledWorkers.size() < pipelineWorkers.size())

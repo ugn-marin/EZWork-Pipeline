@@ -46,11 +46,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
         var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
-        try {
-            sb.append(pipelineChartBuilder.call());
-        } catch (Exception e) {
-            sb.append(e.getMessage());
-        }
+        sb.append(pipelineChartBuilder.get());
         pipelineWarnings = pipelineChartBuilder.getWarnings();
         for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append(warning.getDescription());
@@ -78,7 +74,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Pushes an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
-     * might be used for additional supply for a closed pipeline as well.
+     * might be used for additional supply for a closed pipeline as well, as long as end of input wasn't reached.
      * @param item The item.
      * @throws InterruptedException If interrupted while attempting to push the item.
      */

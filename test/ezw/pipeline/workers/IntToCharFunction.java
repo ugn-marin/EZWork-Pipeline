@@ -10,7 +10,7 @@ public class IntToCharFunction extends Function<Integer, Character> {
     }
 
     @Override
-    protected Character apply(Integer item) {
+    public Character apply(Integer item) {
         return (char) item.intValue();
     }
 }

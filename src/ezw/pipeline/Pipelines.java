@@ -84,7 +84,7 @@ public abstract class Pipelines {
         return new Supplier<>(output, parallel) {
 
             @Override
-            protected O get() {
+            public O get() {
                 return get.get();
             }
         };
@@ -120,7 +120,7 @@ public abstract class Pipelines {
         return new Function<>(input, output, parallel) {
 
             @Override
-            protected O apply(I item) {
+            public O apply(I item) {
                 return apply.apply(item);
             }
         };
@@ -130,16 +130,16 @@ public abstract class Pipelines {
      * Constructs a simple transformer.
      * @param input The input pipe.
      * @param output The output pipe.
-     * @param transform The transform implementation.
+     * @param apply The apply implementation.
      * @param conclude The conclude implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
      */
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output,
-                                                       java.util.function.Function<I, Collection<O>> transform,
+                                                       java.util.function.Function<I, Collection<O>> apply,
                                                        java.util.function.Supplier<Collection<O>> conclude) {
-        return transformer(input, output, 1, transform, conclude);
+        return transformer(input, output, 1, apply, conclude);
     }
 
     /**
@@ -147,21 +147,21 @@ public abstract class Pipelines {
      * @param input The input pipe.
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
-     * @param transform The transform implementation.
+     * @param apply The apply implementation.
      * @param conclude The conclude implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
      */
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output, int parallel,
-                                                       java.util.function.Function<I, Collection<O>> transform,
+                                                       java.util.function.Function<I, Collection<O>> apply,
                                                        java.util.function.Supplier<Collection<O>> conclude) {
-        Objects.requireNonNull(transform, "Transform function is required.");
+        Objects.requireNonNull(apply, "Apply function is required.");
         return new Transformer<>(input, output, parallel) {
 
             @Override
-            protected Collection<O> transform(I item) {
-                return transform.apply(item);
+            public Collection<O> apply(I item) {
+                return apply.apply(item);
             }
 
             @Override
@@ -195,7 +195,7 @@ public abstract class Pipelines {
         return new Consumer<>(input, parallel) {
 
             @Override
-            protected void accept(I item) {
+            public void accept(I item) {
                 accept.accept(item);
             }
         };
