@@ -247,7 +247,7 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
@@ -264,7 +264,7 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(full, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(10, 20);
                 super.accept(item);
             }
@@ -281,7 +281,7 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
@@ -298,7 +298,7 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
@@ -317,14 +317,14 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 20) {
             @Override
-            protected Character get() throws InterruptedException {
+            public Character get() throws InterruptedException {
                 sleepBetween(1, 5);
                 return super.get();
             }
         };
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 5) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 3);
                 super.accept(item);
             }
@@ -341,14 +341,14 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 10) {
             @Override
-            protected Character get() throws InterruptedException {
+            public Character get() throws InterruptedException {
                 sleepBetween(1, 5);
                 return super.get();
             }
         };
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 5) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 3);
                 super.accept(item);
             }
@@ -364,14 +364,14 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
             @Override
-            protected Character get() throws InterruptedException {
+            public Character get() throws InterruptedException {
                 sleepBetween(1, 10);
                 return super.get();
             }
         };
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 10);
                 super.accept(item);
             }
@@ -387,14 +387,14 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
             @Override
-            protected Character get() throws InterruptedException {
+            public Character get() throws InterruptedException {
                 sleepBetween(1, 10);
                 return super.get();
             }
         };
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 10);
                 super.accept(item);
             }
@@ -422,7 +422,7 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
@@ -516,7 +516,7 @@ public class PipelineTest {
         Pipe<Character> upper = new Pipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 3) {
             @Override
-            protected Character apply(Character item) throws InterruptedException {
+            public Character apply(Character item) throws InterruptedException {
                 sleepBetween(2, 8);
                 return super.apply(item);
             }
@@ -524,7 +524,7 @@ public class PipelineTest {
         Pipe<Character> lower = new Pipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 3) {
             @Override
-            protected Character apply(Character item) throws InterruptedException {
+            public Character apply(Character item) throws InterruptedException {
                 sleepBetween(10, 15);
                 return super.apply(item);
             }
@@ -538,7 +538,7 @@ public class PipelineTest {
         Pipe<Character> toPrint = new Pipe<>(smallCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
@@ -565,7 +565,7 @@ public class PipelineTest {
         Pipe<Character> toPrint = new Pipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 if (item == 'Z')
                     throw new NumberFormatException("My failure message");
@@ -594,7 +594,7 @@ public class PipelineTest {
         Pipe<Character> toPrint = new Pipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(100, 500);
                 super.accept(item);
             }
@@ -734,21 +734,21 @@ public class PipelineTest {
     void conditional_fork_slow() throws Exception {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(minimumCapacity), 1) {
             @Override
-            protected Character get() throws InterruptedException {
+            public Character get() throws InterruptedException {
                 sleepBetween(1, 300);
                 return super.get();
             }
         };
         var accum1 = new CharAccumulator(new SupplyPipe<>(minimumCapacity, c -> c == '-'), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 300);
                 super.accept(item);
             }
         };
         var accum2 = new CharAccumulator(new SupplyPipe<>(smallCapacity, c -> c != '-'), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 300);
                 super.accept(item);
             }
@@ -764,14 +764,14 @@ public class PipelineTest {
     void open_star_slow() throws Exception {
         var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 20);
                 super.accept(item);
             }
         };
         var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 50);
                 super.accept(item);
             }
@@ -793,14 +793,14 @@ public class PipelineTest {
     void open_star_slow_stop() throws Exception {
         var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleep(2);
                 super.accept(item);
             }
         };
         var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleep(2);
                 super.accept(item);
             }
@@ -823,14 +823,14 @@ public class PipelineTest {
     void open_star_slow_stop_count() throws Exception {
         var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 10) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleep(2000);
                 super.accept(item);
             }
         };
         var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 10) {
             @Override
-            protected void accept(Character item) throws InterruptedException {
+            public void accept(Character item) throws InterruptedException {
                 sleep(2000);
                 super.accept(item);
             }
@@ -856,9 +856,10 @@ public class PipelineTest {
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
         Concurrent.calculate(() -> {
+            var sgc = pipeline.toConsumer();
             for (char c : full.toCharArray()) {
-                pipeline.push(c);
-                pipeline.push(null);
+                sgc.accept(c);
+                sgc.accept(null);
             }
             pipeline.setEndOfInput();
         });

@@ -15,7 +15,7 @@ public class CharSupplier extends Supplier<Character> {
     }
 
     @Override
-    protected Character get() throws InterruptedException {
+    public Character get() throws InterruptedException {
         try {
             return text.charAt(index.getAndIncrement());
         } catch (StringIndexOutOfBoundsException e) {

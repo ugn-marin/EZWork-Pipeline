@@ -14,7 +14,7 @@ public class Printer<I> extends Consumer<I> {
     }
 
     @Override
-    protected void accept(I item) throws InterruptedException {
+    public void accept(I item) throws InterruptedException {
         ps.print(item);
     }
 

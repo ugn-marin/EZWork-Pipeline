@@ -1,12 +1,14 @@
 package ezw.pipeline;
 
+import ezw.util.function.UnsafeConsumer;
+
 import java.util.Objects;
 
 /**
  * A pipeline worker consuming items from a pipe.
  * @param <I> The input items type.
  */
-public abstract class Consumer<I> extends PipelineWorker implements InputComponent<I> {
+public abstract class Consumer<I> extends PipelineWorker implements UnsafeConsumer<I>, InputComponent<I> {
     private final Pipe<I> input;
 
     /**
@@ -44,5 +46,5 @@ public abstract class Consumer<I> extends PipelineWorker implements InputCompone
      * @param item The item.
      * @throws Exception An exception terminating the pipeline.
      */
-    protected abstract void accept(I item) throws Exception;
+    public abstract void accept(I item) throws Exception;
 }

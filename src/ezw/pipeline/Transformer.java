@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.util.function.UnsafeFunction;
+
 import java.util.Collection;
 import java.util.Objects;
 
@@ -10,7 +12,8 @@ import java.util.Objects;
  * @param <I> The input items type.
  * @param <O> The output items type.
  */
-public abstract class Transformer<I, O> extends PipelineWorker implements InputComponent<I>, OutputComponent<O> {
+public abstract class Transformer<I, O> extends PipelineWorker implements UnsafeFunction<I, Collection<O>>,
+        InputComponent<I>, OutputComponent<O> {
     private final Pipe<I> input;
     private final SupplyPipe<O> output;
 
@@ -48,7 +51,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
     @Override
     protected void work() {
         for (IndexedItem<I> indexedItem : input) {
-            submit(() -> push(transform(indexedItem.getItem())));
+            submit(() -> push(apply(indexedItem.getItem())));
         }
         submit(() -> push(conclude()));
     }
@@ -74,7 +77,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements InputC
      * output pipe.
      * @throws Exception An exception terminating the pipeline.
      */
-    protected abstract Collection<O> transform(I item) throws Exception;
+    public abstract Collection<O> apply(I item) throws Exception;
 
     /**
      * Supplies leftover output items when no items left to transform. This would usually only make sense in a shrinking

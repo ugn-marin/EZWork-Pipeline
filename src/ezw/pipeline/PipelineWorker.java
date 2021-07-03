@@ -59,7 +59,7 @@ public abstract class PipelineWorker implements CallableRunnable {
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
             try {
-                return work.toCallable().call();
+                return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
                 throw t;

@@ -19,7 +19,7 @@ public class WordsTransformer extends Transformer<Character, String> {
     }
 
     @Override
-    protected Collection<String> transform(Character item) {
+    public Collection<String> apply(Character item) {
         if (item == ' ' || item == '\n')
             return nextWord(item == '\n');
         sb.append(item);

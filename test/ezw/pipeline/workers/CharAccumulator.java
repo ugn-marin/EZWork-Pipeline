@@ -11,7 +11,7 @@ public class CharAccumulator extends Consumer<Character> {
     }
 
     @Override
-    protected void accept(Character item) throws InterruptedException {
+    public void accept(Character item) throws InterruptedException {
         synchronized (sb) {
             sb.append(item);
         }
