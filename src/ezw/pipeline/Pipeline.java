@@ -46,12 +46,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
         var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
-        try {
-            sb.append(pipelineChartBuilder.call());
-        } catch (Exception e) {
-            sb.append(e.getMessage());
-            pipelineChartBuilder.getWarnings().add(PipelineWarning.DISCOVERY);
-        }
+        sb.append(pipelineChartBuilder.get());
         pipelineWarnings = pipelineChartBuilder.getWarnings();
         for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append(warning.getDescription());
