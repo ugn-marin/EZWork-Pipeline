@@ -1,8 +1,8 @@
 package ezw.pipeline;
 
 import ezw.concurrent.*;
+import ezw.util.Sugar;
 
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,11 +59,11 @@ public abstract class PipelineWorker implements CallableRunnable {
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
             try {
-                throwIfNonNull(throwable);
+                Sugar.throwIfNonNull(throwable);
                 return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
-                throwIfNonNull(t);
+                Sugar.throwIfNonNull(t);
                 throw t;
             }
         });
@@ -135,23 +135,10 @@ public abstract class PipelineWorker implements CallableRunnable {
      * Runs after all internal work is done.
      * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
      *                  stopped by calling <code>stop</code> or <code>cancel(null)</code>.
-     * @throws Exception The throwable if not null, thrown as is if instance of Exception or Error, or wrapped in a new
-     * UndeclaredThrowableException otherwise.
+     * @throws Exception The throwable if not null.
      */
     protected void onFinish(Throwable throwable) throws Exception {
-        throwIfNonNull(throwable);
-    }
-
-    private void throwIfNonNull(Throwable throwable) throws Exception {
-        if (throwable == null)
-            return;
-        if (throwable instanceof Error)
-            throw (Error) throwable;
-        else if (throwable instanceof UndeclaredThrowableException)
-            throwIfNonNull(throwable.getCause());
-        else if (throwable instanceof Exception)
-            throw (Exception) throwable;
-        throw new UndeclaredThrowableException(throwable);
+        Sugar.throwIfNonNull(throwable);
     }
 
     @Override
