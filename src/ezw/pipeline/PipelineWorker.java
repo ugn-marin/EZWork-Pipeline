@@ -59,9 +59,11 @@ public abstract class PipelineWorker implements CallableRunnable {
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
             try {
+                throwIfNonNull(throwable);
                 return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
+                throwIfNonNull(t);
                 throw t;
             }
         });
@@ -137,10 +139,16 @@ public abstract class PipelineWorker implements CallableRunnable {
      * UndeclaredThrowableException otherwise.
      */
     protected void onFinish(Throwable throwable) throws Exception {
+        throwIfNonNull(throwable);
+    }
+
+    private void throwIfNonNull(Throwable throwable) throws Exception {
         if (throwable == null)
             return;
         if (throwable instanceof Error)
             throw (Error) throwable;
+        else if (throwable instanceof UndeclaredThrowableException)
+            throwIfNonNull(throwable.getCause());
         else if (throwable instanceof Exception)
             throw (Exception) throwable;
         throw new UndeclaredThrowableException(throwable);
