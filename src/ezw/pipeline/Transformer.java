@@ -1,5 +1,6 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
 import ezw.util.function.UnsafeFunction;
 
 import java.util.Collection;
@@ -33,7 +34,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
      * @param parallel The maximum parallel items transforming to allow.
      */
     public Transformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
-        super(parallel);
+        super(Sugar.requireRange(parallel, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
@@ -53,7 +54,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
         for (IndexedItem<I> indexedItem : input) {
             submit(() -> push(apply(indexedItem.getItem())));
         }
-        submit(() -> push(conclude()));
+        submit(() -> push(getLastItems()));
     }
 
     private void push(Collection<O> transformedItems) throws InterruptedException {
@@ -73,8 +74,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
     /**
      * Applies the function on an input item.
      * @param item The input item
-     * @return The transformed items collection. If empty or null, skipped, else each output item is pushed into the
-     * output pipe.
+     * @return The transformed items. If empty or null - skipped, else each output item is pushed into the output pipe.
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract Collection<O> apply(I item) throws Exception;
@@ -82,9 +82,9 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
     /**
      * Supplies leftover output items when no items left to transform. This would usually only make sense in a shrinking
      * transformer (returning 0 or 1 outputs per input) with an accumulative logic.
-     * @return The transformed items collection. If empty or null, skipped, else each output item is pushed into the
-     * output pipe.
+     * @return The transformed items left to return at the end of input. If empty or null - skipped, else each output
+     * item is pushed into the output pipe.
      * @throws Exception An exception terminating the pipeline.
      */
-    protected abstract Collection<O> conclude() throws Exception;
+    protected abstract Collection<O> getLastItems() throws Exception;
 }
