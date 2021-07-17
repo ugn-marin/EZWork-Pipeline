@@ -3,6 +3,7 @@ package ezw.pipeline;
 import ezw.concurrent.Concurrent;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
+import ezw.util.function.UniquePredicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -691,11 +692,11 @@ public class PipelineTest {
     @Test
     void conditional_direct() throws Exception {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(minimumCapacity, c -> c != '-'), 1);
-        var accum2 = new CharAccumulator(supplier.getOutput(), 1);
-        var pipeline = Pipelines.direct(supplier, accum2);
+        var accum = new CharAccumulator(supplier.getOutput(), 1);
+        var pipeline = Pipelines.direct(supplier, accum);
         validate(pipeline);
         pipeline.run();
-        assertEquals(abc.replace("-", ""), accum2.getValue());
+        assertEquals(abc.replace("-", ""), accum.getValue());
     }
 
     @Test
@@ -723,6 +724,27 @@ public class PipelineTest {
         assertEquals("-".repeat(12), accum.getValue());
         assertEquals(12, supplyPipe.getItemsPushed());
         assertEquals(0, pipeline.getCancelledWork());
+    }
+
+    @Test
+    void unique_direct() throws Exception {
+        var supplier = new CharSupplier(full, new SupplyPipe<>(smallCapacity, new UniquePredicate<>()), 1);
+        var accum = new CharAccumulator(supplier.getOutput(), 1);
+        var pipeline = Pipelines.direct(supplier, accum);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals("The avrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ0123456789.", accum.getValue());
+    }
+
+    @Test
+    void unique_direct_parallel() throws Exception {
+        var supplier = new CharSupplier(five, new SupplyPipe<>(smallCapacity, new UniquePredicate<>()), 4);
+        var accum = new CharAccumulator(supplier.getOutput(), 2);
+        var pipeline = Pipelines.direct(supplier, accum);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals("The avrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ0123456789.".length() + 1,
+                accum.getValue().length());
     }
 
     @Test
