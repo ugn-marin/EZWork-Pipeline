@@ -131,15 +131,15 @@ public abstract class Pipelines {
      * @param input The input pipe.
      * @param output The output pipe.
      * @param apply The apply implementation.
-     * @param conclude The conclude implementation (optional).
+     * @param getLastItems The getLastItems implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
      */
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output,
                                                        java.util.function.Function<I, Collection<O>> apply,
-                                                       java.util.function.Supplier<Collection<O>> conclude) {
-        return transformer(input, output, 1, apply, conclude);
+                                                       java.util.function.Supplier<Collection<O>> getLastItems) {
+        return transformer(input, output, 1, apply, getLastItems);
     }
 
     /**
@@ -148,14 +148,14 @@ public abstract class Pipelines {
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
      * @param apply The apply implementation.
-     * @param conclude The conclude implementation (optional).
+     * @param getLastItems The getLastItems implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
      */
     public static <I, O> Transformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output, int parallel,
                                                        java.util.function.Function<I, Collection<O>> apply,
-                                                       java.util.function.Supplier<Collection<O>> conclude) {
+                                                       java.util.function.Supplier<Collection<O>> getLastItems) {
         Objects.requireNonNull(apply, "Apply function is required.");
         return new Transformer<>(input, output, parallel) {
 
@@ -165,8 +165,8 @@ public abstract class Pipelines {
             }
 
             @Override
-            protected Collection<O> conclude() {
-                return conclude != null ? conclude.get() : null;
+            protected Collection<O> getLastItems() {
+                return getLastItems != null ? getLastItems.get() : null;
             }
         };
     }

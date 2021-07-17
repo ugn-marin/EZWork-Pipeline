@@ -1,5 +1,6 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
 import ezw.util.function.UnsafeFunction;
 
 import java.util.Objects;
@@ -31,7 +32,7 @@ public abstract class Function<I, O> extends PipelineWorker implements UnsafeFun
      * @param parallel The maximum parallel items applying to allow.
      */
     public Function(Pipe<I> input, Pipe<O> output, int parallel) {
-        super(parallel);
+        super(Sugar.requireRange(parallel, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }

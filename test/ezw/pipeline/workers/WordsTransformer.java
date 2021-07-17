@@ -27,7 +27,7 @@ public class WordsTransformer extends Transformer<Character, String> {
     }
 
     @Override
-    protected Collection<String> conclude() {
+    protected Collection<String> getLastItems() {
         if (sb.length() > 0)
             return nextWord(true);
         return null;
