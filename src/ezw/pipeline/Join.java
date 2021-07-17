@@ -7,9 +7,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A pipe connector joining input items from several pipes into one output pipe. All input pipes must be in the same
- * index scope. An item is pushed once it was received from all input pipes. If any of the input items with a given
- * index is marked modified, the first modified item is pushed, else the last received item is pushed.
+ * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
+ * meaning that an item is only pushed once it was received from all input pipes. For that reason, all input pipes must
+ * be <b>in the same index scope</b>.<br>
+ * If any of the input items with a given index is marked modified, the first modified item is pushed, else the last
+ * received item is pushed.
  * @param <I> The items type.
  */
 final class Join<I> extends PipeConnector implements OutputComponent<I> {

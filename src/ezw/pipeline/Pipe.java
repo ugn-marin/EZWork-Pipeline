@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.concurrent.InterruptedRuntimeException;
 import ezw.concurrent.Interruptible;
+import ezw.util.Sugar;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,7 +37,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
      *                     the pipe can reach <code>BC+N</code>.
      */
     public Pipe(int baseCapacity) {
-        this.baseCapacity = baseCapacity;
+        this.baseCapacity = Sugar.requireRange(baseCapacity, 1, null);
         inOrderQueue = new ArrayBlockingQueue<>(baseCapacity, true);
         outOfOrderItems = new HashMap<>();
     }

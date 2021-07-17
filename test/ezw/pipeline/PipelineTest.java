@@ -81,7 +81,13 @@ public class PipelineTest {
 
     @Test
     void validations() throws Exception {
-        SupplyPipe<Object> pipe = new SupplyPipe<>(1);
+        // Range
+        try {
+            new Pipe<Integer>(0);
+            fail();
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
         // Nulls
         try {
             Pipelines.supplier(null, () -> null);
@@ -108,6 +114,7 @@ public class PipelineTest {
             System.out.println(e.getMessage());
         }
         // Lists
+        SupplyPipe<Object> pipe = new SupplyPipe<>(1);
         try {
             Pipelines.star(pipe);
             fail();

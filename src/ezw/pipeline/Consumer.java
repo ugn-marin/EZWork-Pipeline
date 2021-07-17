@@ -1,5 +1,6 @@
 package ezw.pipeline;
 
+import ezw.util.Sugar;
 import ezw.util.function.UnsafeConsumer;
 
 import java.util.Objects;
@@ -25,7 +26,7 @@ public abstract class Consumer<I> extends PipelineWorker implements UnsafeConsum
      * @param parallel The maximum parallel items consuming to allow.
      */
     public Consumer(Pipe<I> input, int parallel) {
-        super(parallel);
+        super(Sugar.requireRange(parallel, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
     }
 
