@@ -244,11 +244,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Attaches one or more consumers to the pipeline.
          * @param consumers One or more consumers.
-         * @param <I> The input items type.
          * @return The pipeline.
          */
-        @SafeVarargs
-        public final <I> Pipeline<S> into(Consumer<I>... consumers) {
+        public Pipeline<S> into(Consumer<?>... consumers) {
             return new Pipeline<>(attach(consumers).pipelineWorkers, supplyPipe);
         }
 
