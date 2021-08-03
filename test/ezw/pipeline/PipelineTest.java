@@ -899,7 +899,7 @@ public class PipelineTest {
     }
 
     @Test
-    void skipLevel() throws Exception {
+    void skip_level() throws Exception {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(supplier);
@@ -925,7 +925,7 @@ public class PipelineTest {
     }
 
     @Test
-    void skipLevelExtensionWarning() throws Exception {
+    void skip_level_no_extension() throws Exception {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(supplier);
