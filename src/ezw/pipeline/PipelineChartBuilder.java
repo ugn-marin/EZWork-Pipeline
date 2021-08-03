@@ -115,6 +115,9 @@ class PipelineChartBuilder implements Supplier<String> {
         minLevel = levelsAggregation.keySet().stream().min(Integer::compareTo).orElseThrow();
         maxLevel = levelsAggregation.keySet().stream().max(Integer::compareTo).orElseThrow();
         maxLevelSize = levelsAggregation.values().stream().mapToInt(List::size).max().orElseThrow();
+        if (maxLevelSize < Math.max(forks.stream().mapToInt(f -> f.getOutputs().length).max().orElse(0),
+                joins.stream().mapToInt(j -> j.getInputs().length).max().orElse(0)))
+            warnings.add(PipelineWarning.EXTENSION);
     }
 
     private void buildChartMatrix(Map<Object, String> toString, int[] levelsLength) {

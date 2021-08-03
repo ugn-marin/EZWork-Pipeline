@@ -56,7 +56,7 @@ public class PipelineTest {
 
     private static void validate(Pipeline<?> pipeline) {
         System.out.println(pipeline);
-        assertTrue(pipeline.getWarnings().isEmpty());
+        assertTrue(pipeline.getWarnings().isEmpty(), "Warnings found");
     }
 
     @Test
@@ -896,5 +896,57 @@ public class PipelineTest {
         assertEquals(full.length() * 5, consumer.getValue().length());
         assertEquals(full, Sugar.remove(consumer.getValue(), "null"));
         assertEquals(0, pipeline.getCancelledWork());
+    }
+
+    @Test
+    void skipLevel() throws Exception {
+        var supplyPipe = new SupplyPipe<Character>(smallCapacity);
+        var supplier = new CharSupplier(full, supplyPipe, 1);
+        var builder = Pipeline.from(supplier);
+        var supplied1 = new Pipe<Character>(smallCapacity);
+        var supplied2 = new Pipe<Character>(smallCapacity);
+        var supplied3 = new Pipe<Character>(smallCapacity);
+        builder.extend(supplied2).fork(supplyPipe, supplied1, supplied2, supplied3);
+        var supplied1f = new Pipe<Character>(smallCapacity);
+        var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
+        builder.through(f);
+        var words = new SupplyPipe<String>(mediumCapacity);
+        var wordsTrans = new WordsTransformer(supplied3, words);
+        builder.through(wordsTrans);
+        var joined = new Pipe<Character>(minimumCapacity);
+        builder.join(joined, supplied1f, supplied2);
+        var joinedAccum = new CharAccumulator(joined, 1);
+        var wordsPrinter = new Printer<>(System.out, words, 1);
+        var pipeline = builder.into(joinedAccum, wordsPrinter);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(full.length(), joinedAccum.getValue().length());
+        assertNotEquals(full, joinedAccum.getValue());
+    }
+
+    @Test
+    void skipLevelExtensionWarning() throws Exception {
+        var supplyPipe = new SupplyPipe<Character>(smallCapacity);
+        var supplier = new CharSupplier(full, supplyPipe, 1);
+        var builder = Pipeline.from(supplier);
+        var supplied1 = new Pipe<Character>(smallCapacity);
+        var supplied2 = new Pipe<Character>(smallCapacity);
+        var supplied3 = new Pipe<Character>(smallCapacity);
+        builder.fork(supplyPipe, supplied1, supplied2, supplied3);
+        var supplied1f = new Pipe<Character>(smallCapacity);
+        var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
+        builder.through(f);
+        var words = new SupplyPipe<String>(mediumCapacity);
+        var wordsTrans = new WordsTransformer(supplied3, words);
+        builder.through(wordsTrans);
+        var joined = new Pipe<Character>(minimumCapacity);
+        builder.join(joined, supplied1f, supplied2);
+        var joinedAccum = new CharAccumulator(joined, 1);
+        var wordsPrinter = new Printer<>(System.out, words, 1);
+        var pipeline = builder.into(joinedAccum, wordsPrinter);
+        assertTrue(pipeline.getWarnings().contains(PipelineWarning.EXTENSION));
+        pipeline.run();
+        assertEquals(full.length(), joinedAccum.getValue().length());
+        assertNotEquals(full, joinedAccum.getValue());
     }
 }

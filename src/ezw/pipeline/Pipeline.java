@@ -242,6 +242,16 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         /**
+         * Extends the given pipe in this pipeline.
+         * @param pipe The pipe.
+         * @param <I> The items type.
+         * @return This builder.
+         */
+        public <I> Builder<S> extend(Pipe<I> pipe) {
+            return attach(new Extender<>(pipe));
+        }
+
+        /**
          * Attaches one or more consumers to the pipeline.
          * @param consumers One or more consumers.
          * @return The pipeline.
