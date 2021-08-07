@@ -248,7 +248,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          * @return This builder.
          */
         public <I> Builder<S> extend(Pipe<I> pipe) {
-            return attach(new Extent<>(pipe));
+            return attach(new Extension<>(pipe));
         }
 
         /**
