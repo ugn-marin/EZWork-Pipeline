@@ -85,7 +85,7 @@ public abstract class Pipelines {
      */
     @SuppressWarnings("unchecked")
     public static <I> Pipeline<I> split(Map<Predicate<I>, Consumer<I>> splitConsumers) {
-        return star(new SupplyPipe<>(splitConsumers.size()), splitConsumers.entrySet().stream().map(entry -> consumer(
+        return star(new SupplyPipe<>(1), splitConsumers.entrySet().stream().map(entry -> consumer(
                 new SupplyPipe<>(1, entry.getKey()), entry.getValue())).toArray(PipeConsumer[]::new));
     }
 
