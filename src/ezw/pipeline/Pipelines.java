@@ -1,6 +1,7 @@
 package ezw.pipeline;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -73,8 +74,19 @@ public abstract class Pipelines {
      * @return The pipeline.
      */
     public static <I> Pipeline<I> split(Predicate<I> predicate, Consumer<I> acceptTrue, Consumer<I> acceptFalse) {
-        return star(new SupplyPipe<>(1), consumer(new SupplyPipe<>(1, predicate), acceptTrue),
-                consumer(new SupplyPipe<>(1, Predicate.not(predicate)), acceptFalse));
+        return split(Map.of(predicate, acceptTrue, Predicate.not(predicate), acceptFalse));
+    }
+
+    /**
+     * Constructs an open star pipeline forking from a supply pipe into consumers by predicates' results.
+     * @param splitConsumers The predicates mapped to consumers.
+     * @param <I> The items type.
+     * @return The pipeline.
+     */
+    @SuppressWarnings("unchecked")
+    public static <I> Pipeline<I> split(Map<Predicate<I>, Consumer<I>> splitConsumers) {
+        return star(new SupplyPipe<>(splitConsumers.size()), splitConsumers.entrySet().stream().map(entry -> consumer(
+                new SupplyPipe<>(1, entry.getKey()), entry.getValue())).toArray(PipeConsumer[]::new));
     }
 
     /**
