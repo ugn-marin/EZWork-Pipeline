@@ -2,11 +2,13 @@ package ezw.pipeline;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Utility methods for creating simple pipelines and pipeline workers.
@@ -117,6 +119,24 @@ public abstract class Pipelines {
                 return get.get();
             }
         };
+    }
+
+    /**
+     * Constructs a simple supplier of the non-null elements from the stream.
+     * @param output The output pipe.
+     * @param stream The stream.
+     * @param <O> The output items type.
+     * @return The supplier.
+     */
+    public static <O> PipeSupplier<O> supplier(SupplyPipe<O> output, Stream<O> stream) {
+        var iterator = Objects.requireNonNull(stream, "Stream is null.").filter(Objects::nonNull).iterator();
+        return supplier(output, () -> {
+            try {
+                return iterator.next();
+            } catch (NoSuchElementException e) {
+                return null;
+            }
+        });
     }
 
     /**

@@ -9,9 +9,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -632,6 +634,17 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc.replace("-", ""), charAccumulator.getValue());
+    }
+
+    @Test
+    void stream_conditional_accumulator1() throws Exception {
+        var supplyPipe = new SupplyPipe<>(minimumCapacity, (Predicate<Character>) Character::isAlphabetic);
+        var supplier = Pipelines.supplier(supplyPipe, abc.chars().mapToObj(c -> (char) c));
+        var accumulator = new CharAccumulator(supplyPipe, 1);
+        var pipeline = Pipelines.direct(supplier, accumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(abc.replace("-", ""), accumulator.getValue());
     }
 
     @Test
