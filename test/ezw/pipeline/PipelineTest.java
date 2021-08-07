@@ -899,6 +899,23 @@ public class PipelineTest {
     }
 
     @Test
+    void split() throws Exception {
+        final var even = new StringBuilder();
+        final var odd = new StringBuilder();
+        final var pipeline = Pipelines.<Integer>split(n -> n % 2 == 0, even::append, odd::append);
+        validate(pipeline);
+        Concurrent.calculate(() -> {
+            for (int i = 0; i < 10; i++) {
+                pipeline.push(i);
+            }
+            pipeline.setEndOfInput();
+        });
+        pipeline.run();
+        assertEquals("02468", even.toString());
+        assertEquals("13579", odd.toString());
+    }
+
+    @Test
     void skip_level() throws Exception {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);

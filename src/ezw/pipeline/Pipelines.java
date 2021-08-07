@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -61,6 +62,19 @@ public abstract class Pipelines {
     @SafeVarargs
     public static <O> Pipeline<O> star(SupplyPipe<O> supplyPipe, PipeConsumer<O>... pipeConsumers) {
         return Pipeline.from(supplyPipe).fork(supplyPipe, pipeConsumers).into(pipeConsumers);
+    }
+
+    /**
+     * Constructs an open star pipeline forking from a supply pipe into the two consumers by the predicate result.
+     * @param predicate The predicate by which to accept the items.
+     * @param acceptTrue The consumer for items passing the predicate.
+     * @param acceptFalse The consumer for items not passing the predicate.
+     * @param <I> The items type
+     * @return The pipeline.
+     */
+    public static <I> Pipeline<I> split(Predicate<I> predicate, Consumer<I> acceptTrue, Consumer<I> acceptFalse) {
+        return star(new SupplyPipe<>(1), consumer(new SupplyPipe<>(1, predicate), acceptTrue),
+                consumer(new SupplyPipe<>(1, Predicate.not(predicate)), acceptFalse));
     }
 
     /**
