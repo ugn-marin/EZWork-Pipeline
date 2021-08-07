@@ -189,8 +189,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         /**
-         * Creates a fork from the output worker (input of the fork) into the input workers (outputs of the fork).
-         * This does not attach the workers.
+         * Creates a fork from the output worker (input of the fork) into the input workers (outputs of the fork). This
+         * does not attach the workers.
          * @param input The output worker.
          * @param outputs The input workers.
          * @param <I> The items type.
