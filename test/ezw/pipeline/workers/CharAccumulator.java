@@ -1,9 +1,9 @@
 package ezw.pipeline.workers;
 
-import ezw.pipeline.Consumer;
+import ezw.pipeline.PipeConsumer;
 import ezw.pipeline.Pipe;
 
-public class CharAccumulator extends Consumer<Character> {
+public class CharAccumulator extends PipeConsumer<Character> {
     private final StringBuilder sb = new StringBuilder();
 
     public CharAccumulator(Pipe<Character> input, int parallel) {

@@ -2,12 +2,12 @@ package ezw.pipeline.workers;
 
 import ezw.pipeline.Pipe;
 import ezw.pipeline.SupplyPipe;
-import ezw.pipeline.Transformer;
+import ezw.pipeline.PipeTransformer;
 
 import java.util.Collection;
 import java.util.List;
 
-public class WordsTransformer extends Transformer<Character, String> {
+public class WordsTransformer extends PipeTransformer<Character, String> {
     private final StringBuilder sb = new StringBuilder();
 
     public WordsTransformer(Pipe<Character> input, SupplyPipe<String> output) {

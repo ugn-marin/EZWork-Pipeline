@@ -487,7 +487,7 @@ public class PipelineTest {
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 1);
         Pipe<Character> lower = new Pipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 1);
-        ezw.pipeline.Function<Character, Character> identity = Pipelines.function(toIdentity, new Pipe<>(smallCapacity),
+        PipeFunction<Character, Character> identity = Pipelines.function(toIdentity, new Pipe<>(smallCapacity),
                 Function.identity());
         Pipe<Character> toPrint = new Pipe<>(minimumCapacity);
         builder = builder.through(charLowerFunction, charUpperFunction, identity, Pipelines.function(hyphens, toPrint,

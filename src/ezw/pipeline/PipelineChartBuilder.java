@@ -17,8 +17,8 @@ class PipelineChartBuilder implements Supplier<String> {
     private final Map<Pipe<?>, Integer> pipeOutputLevels;
     private final Map<Pipe<?>, Integer> pipeInputLevels;
 
-    private Set<OutputComponent<?>> outputComponents;
-    private Set<InputComponent<?>> inputComponents;
+    private Set<OutputWorker<?>> outputWorkers;
+    private Set<InputWorker<?>> inputWorkers;
     private Set<Fork<?>> forks;
     private Set<Join<?>> joins;
     private int minLevel;
@@ -57,8 +57,8 @@ class PipelineChartBuilder implements Supplier<String> {
     }
 
     private void classifyPipelineWorkers() {
-        outputComponents = Sugar.instancesOf(pipelineWorkers, OutputComponent.class);
-        inputComponents = Sugar.instancesOf(pipelineWorkers, InputComponent.class);
+        outputWorkers = Sugar.instancesOf(pipelineWorkers, OutputWorker.class);
+        inputWorkers = Sugar.instancesOf(pipelineWorkers, InputWorker.class);
         forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
         joins = Sugar.instancesOf(pipelineWorkers, Join.class);
     }
@@ -73,27 +73,27 @@ class PipelineChartBuilder implements Supplier<String> {
     }
 
     private void setConnectionsLevel(Object pipelineWorker, int level) {
-        if (pipelineWorker instanceof OutputComponent)
-            setOutputTargetsLevel((OutputComponent<?>) pipelineWorker, level);
-        if (pipelineWorker instanceof InputComponent)
-            setInputSourcesLevel((InputComponent<?>) pipelineWorker, level);
+        if (pipelineWorker instanceof OutputWorker)
+            setOutputTargetsLevel((OutputWorker<?>) pipelineWorker, level);
+        if (pipelineWorker instanceof InputWorker)
+            setInputSourcesLevel((InputWorker<?>) pipelineWorker, level);
         if (pipelineWorker instanceof Fork)
             setForkTargetsLevel((Fork<?>) pipelineWorker, level);
         else if (pipelineWorker instanceof Join)
             setJoinSourcesLevel((Join<?>) pipelineWorker, level);
     }
 
-    private void setOutputTargetsLevel(OutputComponent<?> outputComponent, int sourceLevel) {
-        Pipe<?> output = outputComponent.getOutput();
-        inputComponents.stream().filter(notLeveledCheck).filter(ic -> ic.getInput().equals(output)).forEach(
+    private void setOutputTargetsLevel(OutputWorker<?> outputWorker, int sourceLevel) {
+        Pipe<?> output = outputWorker.getOutput();
+        inputWorkers.stream().filter(notLeveledCheck).filter(ic -> ic.getInput().equals(output)).forEach(
                 ic -> setLevel(ic, sourceLevel + 1));
         joins.stream().filter(notLeveledCheck).filter(j -> Arrays.asList(j.getInputs()).contains(output)).forEach(
                 j -> setLevel(j, sourceLevel + 1));
     }
 
-    private void setInputSourcesLevel(InputComponent<?> inputComponent, int targetLevel) {
-        Pipe<?> input = inputComponent.getInput();
-        outputComponents.stream().filter(notLeveledCheck).filter(oc -> oc.getOutput().equals(input)).forEach(
+    private void setInputSourcesLevel(InputWorker<?> inputWorker, int targetLevel) {
+        Pipe<?> input = inputWorker.getInput();
+        outputWorkers.stream().filter(notLeveledCheck).filter(oc -> oc.getOutput().equals(input)).forEach(
                 oc -> setLevel(oc, targetLevel - 1));
         forks.stream().filter(notLeveledCheck).filter(f -> Arrays.asList(f.getOutputs()).contains(input)).forEach(
                 f -> setLevel(f, targetLevel - 1));
@@ -101,13 +101,13 @@ class PipelineChartBuilder implements Supplier<String> {
 
     private void setForkTargetsLevel(Fork<?> fork, int forkLevel) {
         List<Pipe<?>> outputs = Arrays.asList(fork.getOutputs());
-        inputComponents.stream().filter(notLeveledCheck).filter(ic -> outputs.contains(ic.getInput())).forEach(
+        inputWorkers.stream().filter(notLeveledCheck).filter(ic -> outputs.contains(ic.getInput())).forEach(
                 ic -> setLevel(ic, forkLevel + 1));
     }
 
     private void setJoinSourcesLevel(Join<?> join, int joinLevel) {
         List<Pipe<?>> inputs = Arrays.asList(join.getInputs());
-        outputComponents.stream().filter(notLeveledCheck).filter(oc -> inputs.contains(oc.getOutput())).forEach(
+        outputWorkers.stream().filter(notLeveledCheck).filter(oc -> inputs.contains(oc.getOutput())).forEach(
                 oc -> setLevel(oc, joinLevel - 1));
     }
 
@@ -139,10 +139,10 @@ class PipelineChartBuilder implements Supplier<String> {
 
     private String getSortingString(Object pipelineWorker) {
         String pwStr = pipelineWorker.toString();
-        if (pipelineWorker instanceof OutputComponent)
-            pwStr += ((OutputComponent<?>) pipelineWorker).getOutput();
-        if (pipelineWorker instanceof InputComponent)
-            pwStr += ((InputComponent<?>) pipelineWorker).getInput();
+        if (pipelineWorker instanceof OutputWorker)
+            pwStr += ((OutputWorker<?>) pipelineWorker).getOutput();
+        if (pipelineWorker instanceof InputWorker)
+            pwStr += ((InputWorker<?>) pipelineWorker).getInput();
         return pwStr;
     }
 
@@ -150,8 +150,8 @@ class PipelineChartBuilder implements Supplier<String> {
         String pwStr = pipelineWorker.toString();
         int newRow = row;
         Pipe<?> pipe;
-        if (pipelineWorker instanceof OutputComponent) {
-            pipe = ((OutputComponent<?>) pipelineWorker).getOutput();
+        if (pipelineWorker instanceof OutputWorker) {
+            pipe = ((OutputWorker<?>) pipelineWorker).getOutput();
             if (!pipeRows.containsKey(pipe))
                 pwStr = String.format("%s %s", pwStr, pipe);
             setPipeRow(pipe, row);
@@ -159,8 +159,8 @@ class PipelineChartBuilder implements Supplier<String> {
             if (!outputPipes.add(pipe))
                 warnings.add(PipelineWarning.MULTIPLE_INPUTS);
         }
-        if (pipelineWorker instanceof InputComponent) {
-            pipe = ((InputComponent<?>) pipelineWorker).getInput();
+        if (pipelineWorker instanceof InputWorker) {
+            pipe = ((InputWorker<?>) pipelineWorker).getInput();
             if (!pipeRows.containsKey(pipe))
                 pwStr = String.format("%s %s", pipe, pwStr);
             newRow = setPipeRow(pipe, row);

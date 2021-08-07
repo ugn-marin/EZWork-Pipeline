@@ -2,9 +2,7 @@ package ezw.pipeline;
 
 import ezw.util.Sugar;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
@@ -14,7 +12,7 @@ import java.util.Objects;
  * received item is pushed.
  * @param <I> The items type.
  */
-final class Join<I> extends PipeConnector implements OutputComponent<I> {
+final class Join<I> extends PipeConnector implements OutputWorker<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
     private final Map<Long, Integer> remainingInputs;
@@ -25,6 +23,8 @@ final class Join<I> extends PipeConnector implements OutputComponent<I> {
         super(Sugar.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
+        if (!Sugar.instancesOf(List.of(inputs), SupplyGate.class).isEmpty())
+            throw new IllegalArgumentException("Join input pipes cannot have supply pipes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
         remainingInputs = new HashMap<>(inputs.length);

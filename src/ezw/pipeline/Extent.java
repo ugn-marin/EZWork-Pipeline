@@ -1,13 +1,13 @@
 package ezw.pipeline;
 
 /**
- * A pipe connector marking a pipe as extended. The extender does not interact with the pipe.
+ * A pipe connector marking a pipe as extended. The extent does not interact with the pipe.
  * @param <I> The items type.
  */
-final class Extender<I> extends PipeConnector implements InputComponent<I>, OutputComponent<I> {
+final class Extent<I> extends PipeConnector implements InputWorker<I>, OutputWorker<I> {
     private final Pipe<I> pipe;
 
-    Extender(Pipe<I> pipe) {
+    Extent(Pipe<I> pipe) {
         super(0);
         this.pipe = pipe;
     }

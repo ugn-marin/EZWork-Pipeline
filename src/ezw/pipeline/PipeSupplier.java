@@ -9,15 +9,15 @@ import java.util.Objects;
  * A pipeline worker supplying items for a supply pipe.
  * @param <O> The output items type.
  */
-public abstract class Supplier<O> extends PipelineWorker implements UnsafeSupplier<O>, SupplyGate<O>,
-        OutputComponent<O> {
+public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSupplier<O>, SupplyGate<O>,
+        OutputWorker<O> {
     private final SupplyPipe<O> output;
 
     /**
      * Constructs a single-threaded supplier.
      * @param output The output pipe.
      */
-    public Supplier(SupplyPipe<O> output) {
+    public PipeSupplier(SupplyPipe<O> output) {
         this(output, 1);
     }
 
@@ -26,7 +26,7 @@ public abstract class Supplier<O> extends PipelineWorker implements UnsafeSuppli
      * @param output The output pipe.
      * @param parallel The maximum parallel items supplying to allow.
      */
-    public Supplier(SupplyPipe<O> output, int parallel) {
+    public PipeSupplier(SupplyPipe<O> output, int parallel) {
         super(Sugar.requireRange(parallel, 1, null));
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
@@ -58,4 +58,9 @@ public abstract class Supplier<O> extends PipelineWorker implements UnsafeSuppli
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract O get() throws Exception;
+
+    @Override
+    protected String getSimpleName() {
+        return "S";
+    }
 }

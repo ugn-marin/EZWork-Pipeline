@@ -1,11 +1,11 @@
 package ezw.pipeline.workers;
 
-import ezw.pipeline.Supplier;
+import ezw.pipeline.PipeSupplier;
 import ezw.pipeline.SupplyPipe;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CharSupplier extends Supplier<Character> {
+public class CharSupplier extends PipeSupplier<Character> {
     private final String text;
     private final AtomicInteger index = new AtomicInteger();
 
