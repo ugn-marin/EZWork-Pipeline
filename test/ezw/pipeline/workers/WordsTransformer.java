@@ -1,8 +1,8 @@
 package ezw.pipeline.workers;
 
 import ezw.pipeline.Pipe;
-import ezw.pipeline.SupplyPipe;
 import ezw.pipeline.PipeTransformer;
+import ezw.pipeline.SupplyPipe;
 
 import java.util.Collection;
 import java.util.List;

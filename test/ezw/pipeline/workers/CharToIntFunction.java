@@ -1,7 +1,7 @@
 package ezw.pipeline.workers;
 
-import ezw.pipeline.PipeFunction;
 import ezw.pipeline.Pipe;
+import ezw.pipeline.PipeFunction;
 
 public class CharToIntFunction extends PipeFunction<Character, Integer> {
 

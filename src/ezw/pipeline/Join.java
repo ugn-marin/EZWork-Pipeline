@@ -2,7 +2,10 @@ package ezw.pipeline;
 
 import ezw.util.Sugar;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
