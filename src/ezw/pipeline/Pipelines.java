@@ -2,7 +2,6 @@ package ezw.pipeline;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -130,13 +129,7 @@ public abstract class Pipelines {
      */
     public static <O> PipeSupplier<O> supplier(SupplyPipe<O> output, Stream<O> stream) {
         var iterator = Objects.requireNonNull(stream, "Stream is null.").filter(Objects::nonNull).iterator();
-        return supplier(output, () -> {
-            try {
-                return iterator.next();
-            } catch (NoSuchElementException e) {
-                return null;
-            }
-        });
+        return supplier(output, () -> iterator.hasNext() ? iterator.next() : null);
     }
 
     /**
