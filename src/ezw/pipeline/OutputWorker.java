@@ -1,10 +1,10 @@
 package ezw.pipeline;
 
 /**
- * A component containing an output pipe.
+ * A worker containing an output pipe.
  * @param <O> The output items type.
  */
-public interface OutputComponent<O> {
+public interface OutputWorker<O> {
 
     /**
      * Returns the output pipe.

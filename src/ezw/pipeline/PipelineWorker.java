@@ -141,17 +141,25 @@ public abstract class PipelineWorker implements CallableRunnable {
         Sugar.throwIfNonNull(throwable);
     }
 
-    @Override
-    public String toString() {
+    /**
+     * Returns a simple name of the worker.
+     */
+    protected String getSimpleName() {
         Class<?> clazz = getClass();
         String simpleName = clazz.getSimpleName();
         while (simpleName.isEmpty()) {
             clazz = clazz.getSuperclass();
             simpleName = clazz.getSimpleName();
         }
-        if (getParallel() > 1)
-            simpleName += String.format("[%d]", getParallel());
         return simpleName;
+    }
+
+    @Override
+    public String toString() {
+        String string = getSimpleName();
+        if (getParallel() > 1)
+            string += String.format("[%d]", getParallel());
+        return string;
     }
 
     private static class SilentStop extends Throwable {}

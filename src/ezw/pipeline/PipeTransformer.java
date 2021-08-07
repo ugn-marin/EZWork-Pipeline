@@ -13,8 +13,8 @@ import java.util.Objects;
  * @param <I> The input items type.
  * @param <O> The output items type.
  */
-public abstract class Transformer<I, O> extends PipelineWorker implements UnsafeFunction<I, Collection<O>>,
-        InputComponent<I>, OutputComponent<O> {
+public abstract class PipeTransformer<I, O> extends PipelineWorker implements UnsafeFunction<I, Collection<O>>,
+        InputWorker<I>, OutputWorker<O> {
     private final Pipe<I> input;
     private final SupplyPipe<O> output;
 
@@ -23,7 +23,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
      * @param input The input pipe.
      * @param output The output pipe.
      */
-    public Transformer(Pipe<I> input, SupplyPipe<O> output) {
+    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output) {
         this(input, output, 1);
     }
 
@@ -33,7 +33,7 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
      * @param output The output pipe.
      * @param parallel The maximum parallel items transforming to allow.
      */
-    public Transformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
+    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
         super(Sugar.requireRange(parallel, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
@@ -87,4 +87,9 @@ public abstract class Transformer<I, O> extends PipelineWorker implements Unsafe
      * @throws Exception An exception terminating the pipeline.
      */
     protected abstract Collection<O> getLastItems() throws Exception;
+
+    @Override
+    protected String getSimpleName() {
+        return "T";
+    }
 }

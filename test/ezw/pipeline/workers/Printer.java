@@ -1,11 +1,11 @@
 package ezw.pipeline.workers;
 
-import ezw.pipeline.Consumer;
 import ezw.pipeline.Pipe;
+import ezw.pipeline.PipeConsumer;
 
 import java.io.PrintStream;
 
-public class Printer<I> extends Consumer<I> {
+public class Printer<I> extends PipeConsumer<I> {
     private final PrintStream ps;
 
     public Printer(PrintStream ps, Pipe<I> input, int parallel) {

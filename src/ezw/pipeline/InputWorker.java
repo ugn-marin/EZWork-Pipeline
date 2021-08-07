@@ -1,10 +1,10 @@
 package ezw.pipeline;
 
 /**
- * A component containing an input pipe.
+ * A worker containing an input pipe.
  * @param <I> The input items type.
  */
-public interface InputComponent<I> {
+public interface InputWorker<I> {
 
     /**
      * Return the input pipe.

@@ -18,13 +18,13 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
-     * @param suppliers One or more suppliers feeding the pipeline.
+     * @param pipeSuppliers One or more suppliers feeding the pipeline.
      * @param <S> The type of the supplied items.
      * @return The pipeline builder.
      */
     @SafeVarargs
-    public static <S> Builder<S> from(Supplier<S>... suppliers) {
-        return new Builder<>(suppliers);
+    public static <S> Builder<S> from(PipeSupplier<S>... pipeSuppliers) {
+        return new Builder<>(pipeSuppliers);
     }
 
     /**
@@ -41,7 +41,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         super(pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
-        boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof Supplier);
+        boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
         int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
@@ -87,10 +87,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     protected void onFinish(Throwable throwable) throws Exception {
         setEndOfInput();
         pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(throwable));
-        Sugar.<InputComponent<?>>instancesOf(pipelineWorkers, InputComponent.class).stream()
-                .map(InputComponent::getInput).forEach(Pipe::clear);
-        Sugar.<OutputComponent<?>>instancesOf(pipelineWorkers, OutputComponent.class).stream()
-                .map(OutputComponent::getOutput).forEach(Pipe::clear);
+        Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
+                .map(InputWorker::getInput).forEach(Pipe::clear);
+        Sugar.<OutputWorker<?>>instancesOf(pipelineWorkers, OutputWorker.class).stream()
+                .map(OutputWorker::getOutput).forEach(Pipe::clear);
         super.onFinish(throwable);
     }
 
@@ -124,13 +124,13 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         private final SupplyPipe<S> supplyPipe;
 
         @SafeVarargs
-        private Builder(Supplier<S>... suppliers) {
-            var supplyPipes = Arrays.stream(Sugar.requireFull(suppliers)).map(Supplier::getOutput)
+        private Builder(PipeSupplier<S>... pipeSuppliers) {
+            var supplyPipes = Arrays.stream(Sugar.requireFull(pipeSuppliers)).map(PipeSupplier::getOutput)
                     .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
                 throw new IllegalArgumentException("The pipeline suppliers must feed exactly 1 supply pipe.");
             supplyPipe = (SupplyPipe<S>) supplyPipes.stream().findFirst().get();
-            attach(suppliers);
+            attach(pipeSuppliers);
         }
 
         private Builder(SupplyPipe<S> supplyPipe) {
@@ -139,26 +139,26 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Attaches one or more functions to the pipeline.
-         * @param functions One or more functions.
+         * @param pipeFunctions One or more functions.
          * @param <I> The input items type.
          * @param <O> The output items type.
          * @return This builder.
          */
         @SafeVarargs
-        public final <I, O> Builder<S> through(Function<I, O>... functions) {
-            return attach(functions);
+        public final <I, O> Builder<S> through(PipeFunction<I, O>... pipeFunctions) {
+            return attach(pipeFunctions);
         }
 
         /**
          * Attaches one or more transformers to the pipeline.
-         * @param transformers One or more transformers.
+         * @param pipeTransformers One or more transformers.
          * @param <I> The input items type.
          * @param <O> The output items type.
          * @return This builder.
          */
         @SafeVarargs
-        public final <I, O> Builder<S> through(Transformer<I, O>... transformers) {
-            return attach(transformers);
+        public final <I, O> Builder<S> through(PipeTransformer<I, O>... pipeTransformers) {
+            return attach(pipeTransformers);
         }
 
         /**
@@ -174,30 +174,30 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         /**
-         * Creates a fork from the input pipe into the input components (outputs of the fork). This does not attach the
-         * components.
+         * Creates a fork from the input pipe into the input workers (outputs of the fork). This does not attach the
+         * workers.
          * @param input The input pipe.
-         * @param outputs The input components.
+         * @param outputs The input workers.
          * @param <I> The items type.
          * @return This builder.
          */
         @SafeVarargs
         @SuppressWarnings("unchecked")
-        public final <I> Builder<S> fork(Pipe<I> input, InputComponent<I>... outputs) {
-            return fork(input, Arrays.stream(Sugar.requireFull(outputs)).map(InputComponent::getInput)
+        public final <I> Builder<S> fork(Pipe<I> input, InputWorker<I>... outputs) {
+            return fork(input, Arrays.stream(Sugar.requireFull(outputs)).map(InputWorker::getInput)
                     .toArray(Pipe[]::new));
         }
 
         /**
-         * Creates a fork from the output component (input of the fork) into the input components (outputs of the fork).
-         * This does not attach the components.
-         * @param input The output component.
-         * @param outputs The input components.
+         * Creates a fork from the output worker (input of the fork) into the input workers (outputs of the fork). This
+         * does not attach the workers.
+         * @param input The output worker.
+         * @param outputs The input workers.
          * @param <I> The items type.
          * @return This builder.
          */
         @SafeVarargs
-        public final <I> Builder<S> fork(OutputComponent<I> input, InputComponent<I>... outputs) {
+        public final <I> Builder<S> fork(OutputWorker<I> input, InputWorker<I>... outputs) {
             return fork(input.getOutput(), outputs);
         }
 
@@ -214,40 +214,50 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         /**
-         * Creates a join from the output components (inputs of the join) into the output pipe. This does not attach the
-         * components.
+         * Creates a join from the output workers (inputs of the join) into the output pipe. This does not attach the
+         * workers.
          * @param output The output pipe.
-         * @param inputs The output components.
+         * @param inputs The output workers.
          * @param <I> The items type.
          * @return This builder.
          */
         @SafeVarargs
         @SuppressWarnings("unchecked")
-        public final <I> Builder<S> join(Pipe<I> output, OutputComponent<I>... inputs) {
-            return join(output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputComponent::getOutput)
+        public final <I> Builder<S> join(Pipe<I> output, OutputWorker<I>... inputs) {
+            return join(output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputWorker::getOutput)
                     .toArray(Pipe[]::new));
         }
 
         /**
-         * Creates a join from the output components (inputs of the join) into the input component (output of the join).
-         * This does not attach the components.
-         * @param output The input component.
-         * @param inputs The output components.
+         * Creates a join from the output workers (inputs of the join) into the input worker (output of the join). This
+         * does not attach the workers.
+         * @param output The input worker.
+         * @param inputs The output workers.
          * @param <I> The items type.
          * @return This builder.
          */
         @SafeVarargs
-        public final <I> Builder<S> join(InputComponent<I> output, OutputComponent<I>... inputs) {
+        public final <I> Builder<S> join(InputWorker<I> output, OutputWorker<I>... inputs) {
             return join(output.getInput(), inputs);
         }
 
         /**
+         * Extends the given pipe in this pipeline.
+         * @param pipe The pipe.
+         * @param <I> The items type.
+         * @return This builder.
+         */
+        public <I> Builder<S> extend(Pipe<I> pipe) {
+            return attach(new Extender<>(pipe));
+        }
+
+        /**
          * Attaches one or more consumers to the pipeline.
-         * @param consumers One or more consumers.
+         * @param pipeConsumers One or more consumers.
          * @return The pipeline.
          */
-        public Pipeline<S> into(Consumer<?>... consumers) {
-            return new Pipeline<>(attach(consumers).pipelineWorkers, supplyPipe);
+        public Pipeline<S> into(PipeConsumer<?>... pipeConsumers) {
+            return new Pipeline<>(attach(pipeConsumers).pipelineWorkers, supplyPipe);
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {

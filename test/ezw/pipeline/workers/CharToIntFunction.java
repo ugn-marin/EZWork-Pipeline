@@ -1,9 +1,9 @@
 package ezw.pipeline.workers;
 
-import ezw.pipeline.Function;
 import ezw.pipeline.Pipe;
+import ezw.pipeline.PipeFunction;
 
-public class CharToIntFunction extends Function<Character, Integer> {
+public class CharToIntFunction extends PipeFunction<Character, Integer> {
 
     public CharToIntFunction(Pipe<Character> input, Pipe<Integer> output, int parallel) {
         super(input, output, parallel);

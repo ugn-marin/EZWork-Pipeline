@@ -11,13 +11,13 @@ import java.util.Objects;
  * enforce the items order, potentially blocking other available pipes pushing.
  * @param <I> The items type.
  */
-final class Fork<I> extends PipeConnector implements InputComponent<I> {
+final class Fork<I> extends PipeConnector implements InputWorker<I> {
     private final Pipe<I> input;
     private final Pipe<I>[] outputs;
 
     @SafeVarargs
     Fork(Pipe<I> input, Pipe<I>... outputs) {
-        super((int) Arrays.stream(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyPipe)).count());
+        super((int) Arrays.stream(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyGate)).count());
         if (outputs.length < 2)
             throw new IllegalArgumentException("Fork requires at least 2 output pipes.");
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
@@ -37,7 +37,7 @@ final class Fork<I> extends PipeConnector implements InputComponent<I> {
     protected void work() throws InterruptedException {
         for (IndexedItem<I> indexedItem : input) {
             for (Pipe<I> output : outputs) {
-                if (output instanceof SupplyPipe)
+                if (output instanceof SupplyGate)
                     output.push(indexedItem);
                 else
                     submit(() -> output.push(indexedItem));
