@@ -21,10 +21,10 @@ public abstract class Pipelines {
      * </pre>
      * @param pipeSupplier The supplier.
      * @param pipeConsumer The consumer.
-     * @param <O> The items type.
+     * @param <I> The items type.
      * @return The pipeline.
      */
-    public static <O> Pipeline<O> direct(PipeSupplier<O> pipeSupplier, PipeConsumer<O> pipeConsumer) {
+    public static <I> Pipeline<I> direct(PipeSupplier<I> pipeSupplier, PipeConsumer<I> pipeConsumer) {
         return Pipeline.from(pipeSupplier).into(pipeConsumer);
     }
 
@@ -32,11 +32,11 @@ public abstract class Pipelines {
      * Constructs a pipeline from the supplier into the consumer using a simple supply pipe.
      * @param get The supplier get implementation.
      * @param accept The consumer accept implementation.
-     * @param <O> The items type.
+     * @param <I> The items type.
      * @return The pipeline.
      */
-    public static <O> Pipeline<O> direct(Supplier<O> get, Consumer<O> accept) {
-        SupplyPipe<O> supplyPipe = new SupplyPipe<>(1);
+    public static <I> Pipeline<I> direct(Supplier<I> get, Consumer<I> accept) {
+        SupplyPipe<I> supplyPipe = new SupplyPipe<>(1);
         return direct(supplier(supplyPipe, get), consumer(supplyPipe, accept));
     }
 
@@ -44,11 +44,11 @@ public abstract class Pipelines {
      * Constructs a star pipeline forking from the supplier into all the consumers.
      * @param pipeSupplier The supplier.
      * @param pipeConsumers The pipe consumers.
-     * @param <O> The items type.
+     * @param <I> The items type.
      * @return The pipeline.
      */
     @SafeVarargs
-    public static <O> Pipeline<O> star(PipeSupplier<O> pipeSupplier, PipeConsumer<O>... pipeConsumers) {
+    public static <I> Pipeline<I> star(PipeSupplier<I> pipeSupplier, PipeConsumer<I>... pipeConsumers) {
         return Pipeline.from(pipeSupplier).fork(pipeSupplier, pipeConsumers).into(pipeConsumers);
     }
 
@@ -56,11 +56,11 @@ public abstract class Pipelines {
      * Constructs an open star pipeline forking from the supply pipe into all the consumers.
      * @param supplyPipe The supply pipe.
      * @param pipeConsumers The pipe consumers.
-     * @param <O> The items type.
+     * @param <I> The items type.
      * @return The pipeline.
      */
     @SafeVarargs
-    public static <O> Pipeline<O> star(SupplyPipe<O> supplyPipe, PipeConsumer<O>... pipeConsumers) {
+    public static <I> Pipeline<I> star(SupplyPipe<I> supplyPipe, PipeConsumer<I>... pipeConsumers) {
         return Pipeline.from(supplyPipe).fork(supplyPipe, pipeConsumers).into(pipeConsumers);
     }
 
