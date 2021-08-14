@@ -1,6 +1,7 @@
 package ezw.pipeline;
 
 import ezw.concurrent.Concurrent;
+import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
 import ezw.util.function.UniquePredicate;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -923,15 +925,18 @@ public class PipelineTest {
         var supplied1 = new Pipe<Character>(smallCapacity);
         var supplied2 = new Pipe<Character>(smallCapacity);
         var supplied3 = new Pipe<Character>(smallCapacity);
-        builder.extend(supplied2).fork(supplyPipe, supplied1, supplied2, supplied3);
+        var supplied4 = new Pipe<Character>(smallCapacity);
+        builder.extend(supplied2).fork(supplyPipe, supplied1, supplied2, supplied3, supplied4);
         var supplied1f = new Pipe<Character>(smallCapacity);
+        var supplied3a = new Pipe<Character>(smallCapacity);
         var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
-        builder.through(f);
-        var words = new SupplyPipe<String>(mediumCapacity);
-        var wordsTrans = new WordsTransformer(supplied3, words);
+        var a = Pipelines.action(supplied3, supplied3a, 6, (Consumer<Character>) Interruptible::sleep);
+        builder.through(f, a);
+        var words = new SupplyPipe<String>(mediumCapacity, word -> word.length() < 3);
+        var wordsTrans = new WordsTransformer(supplied4, words);
         builder.through(wordsTrans);
         var joined = new Pipe<Character>(minimumCapacity);
-        builder.join(joined, supplied1f, supplied2);
+        builder.join(joined, supplied1f, supplied2, supplied3a);
         var joinedAccum = new CharAccumulator(joined, 1);
         var wordsPrinter = new Printer<>(System.out, words, 1);
         var pipeline = builder.into(joinedAccum, wordsPrinter);

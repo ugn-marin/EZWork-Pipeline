@@ -168,6 +168,38 @@ public abstract class Pipelines {
     }
 
     /**
+     * Constructs a simple action.
+     * @param input The input pipe.
+     * @param output The output pipe.
+     * @param accept The accept implementation.
+     * @param <I> The items type.
+     * @return The action.
+     */
+    public static <I> PipeAction<I> action(Pipe<I> input, Pipe<I> output, Consumer<I> accept) {
+        return action(input, output, 1, accept);
+    }
+
+    /**
+     * Constructs a simple multi-threaded action.
+     * @param input The input pipe.
+     * @param output The output pipe.
+     * @param concurrency The maximum parallel items accepting to allow.
+     * @param accept The accept implementation.
+     * @param <I> The items type.
+     * @return The action.
+     */
+    public static <I> PipeAction<I> action(Pipe<I> input, Pipe<I> output, int concurrency, Consumer<I> accept) {
+        Objects.requireNonNull(accept, "Accept consumer is required.");
+        return new PipeAction<>(input, output, concurrency) {
+
+            @Override
+            public void accept(I item) {
+                accept.accept(item);
+            }
+        };
+    }
+
+    /**
      * Constructs a simple transformer.
      * @param input The input pipe.
      * @param output The output pipe.
