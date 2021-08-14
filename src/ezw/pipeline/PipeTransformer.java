@@ -31,10 +31,10 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
      * Constructs a multi-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items transforming to allow.
+     * @param concurrency The maximum parallel items transforming to allow.
      */
-    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
-        super(Sugar.requireRange(parallel, 1, null));
+    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int concurrency) {
+        super(Sugar.requireRange(concurrency, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }

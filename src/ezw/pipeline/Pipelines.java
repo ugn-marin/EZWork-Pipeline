@@ -104,14 +104,14 @@ public abstract class Pipelines {
     /**
      * Constructs a simple multi-threaded supplier.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items supplying to allow.
+     * @param concurrency The maximum parallel items supplying to allow.
      * @param get The get implementation.
      * @param <O> The output items type.
      * @return The supplier.
      */
-    public static <O> PipeSupplier<O> supplier(SupplyPipe<O> output, int parallel, Supplier<O> get) {
+    public static <O> PipeSupplier<O> supplier(SupplyPipe<O> output, int concurrency, Supplier<O> get) {
         Objects.requireNonNull(get, "Get supplier is required.");
-        return new PipeSupplier<>(output, parallel) {
+        return new PipeSupplier<>(output, concurrency) {
 
             @Override
             public O get() {
@@ -149,16 +149,16 @@ public abstract class Pipelines {
      * Constructs a simple multi-threaded function.
      * @param input The input pipe.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items applying to allow.
+     * @param concurrency The maximum parallel items applying to allow.
      * @param apply The apply implementation.
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The function.
      */
-    public static <I, O> PipeFunction<I, O> function(Pipe<I> input, Pipe<O> output, int parallel,
+    public static <I, O> PipeFunction<I, O> function(Pipe<I> input, Pipe<O> output, int concurrency,
                                                      Function<I, O> apply) {
         Objects.requireNonNull(apply, "Apply function is required.");
-        return new PipeFunction<>(input, output, parallel) {
+        return new PipeFunction<>(input, output, concurrency) {
 
             @Override
             public O apply(I item) {
@@ -187,18 +187,18 @@ public abstract class Pipelines {
      * Constructs a simple multi-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items transforming to allow.
+     * @param concurrency The maximum parallel items transforming to allow.
      * @param apply The apply implementation.
      * @param getLastItems The getLastItems implementation (optional).
      * @param <I> The input items type.
      * @param <O> The output items type.
      * @return The transformer.
      */
-    public static <I, O> PipeTransformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output, int parallel,
+    public static <I, O> PipeTransformer<I, O> transformer(Pipe<I> input, SupplyPipe<O> output, int concurrency,
                                                            Function<I, Collection<O>> apply,
                                                            Supplier<Collection<O>> getLastItems) {
         Objects.requireNonNull(apply, "Apply function is required.");
-        return new PipeTransformer<>(input, output, parallel) {
+        return new PipeTransformer<>(input, output, concurrency) {
 
             @Override
             public Collection<O> apply(I item) {
@@ -226,14 +226,14 @@ public abstract class Pipelines {
     /**
      * Constructs a simple multi-threaded consumer.
      * @param input The input pipe.
-     * @param parallel The maximum parallel items consuming to allow.
+     * @param concurrency The maximum parallel items consuming to allow.
      * @param accept The accept implementation.
      * @param <I> The input items type.
      * @return The consumer.
      */
-    public static <I> PipeConsumer<I> consumer(Pipe<I> input, int parallel, Consumer<I> accept) {
+    public static <I> PipeConsumer<I> consumer(Pipe<I> input, int concurrency, Consumer<I> accept) {
         Objects.requireNonNull(accept, "Accept consumer is required.");
-        return new PipeConsumer<>(input, parallel) {
+        return new PipeConsumer<>(input, concurrency) {
 
             @Override
             public void accept(I item) {

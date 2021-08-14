@@ -12,24 +12,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A callable runnable executing in a pipeline.
  */
 public abstract class PipelineWorker implements CallableRunnable {
-    private final int parallel;
+    private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
-    PipelineWorker(int parallel) {
-        this.parallel = parallel;
-        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(parallel));
+    PipelineWorker(int concurrency) {
+        this.concurrency = concurrency;
+        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 
     /**
-     * Returns the parallel level.
+     * Returns the concurrency level of the worker.
      */
-    protected int getParallel() {
-        return parallel;
+    protected int getConcurrency() {
+        return concurrency;
     }
 
     /**
@@ -57,8 +57,8 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Submits internal work as a cancellable task. Blocked if parallel level reached. The work execution failure will
-     * trigger cancellation of all submitted work and failure of the entire worker.
+     * Submits internal work as a cancellable task. Blocked if concurrency level reached. The work execution failure
+     * will trigger cancellation of all submitted work and failure of the entire worker.
      * @param work Internal work.
      * @throws InterruptedRuntimeException If interrupted while trying to submit the work.
      */
@@ -155,8 +155,8 @@ public abstract class PipelineWorker implements CallableRunnable {
     @Override
     public String toString() {
         String string = getSimpleName();
-        if (getParallel() > 1)
-            string += String.format("[%d]", getParallel());
+        if (getConcurrency() > 1)
+            string += String.format("[%d]", getConcurrency());
         return string;
     }
 

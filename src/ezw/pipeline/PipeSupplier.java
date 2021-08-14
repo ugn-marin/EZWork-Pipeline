@@ -24,10 +24,10 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
     /**
      * Constructs a multi-threaded supplier.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items supplying to allow.
+     * @param concurrency The maximum parallel items supplying to allow.
      */
-    public PipeSupplier(SupplyPipe<O> output, int parallel) {
-        super(Sugar.requireRange(parallel, 1, null));
+    public PipeSupplier(SupplyPipe<O> output, int concurrency) {
+        super(Sugar.requireRange(concurrency, 1, null));
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
 
@@ -43,7 +43,7 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
 
     @Override
     protected void work() {
-        Sugar.repeat(getParallel(), () -> submit(() -> Sugar.acceptWhile(this::get, this::push, Objects::nonNull)));
+        Sugar.repeat(getConcurrency(), () -> submit(() -> Sugar.acceptWhile(this::get, this::push, Objects::nonNull)));
     }
 
     /**
