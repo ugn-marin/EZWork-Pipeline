@@ -714,20 +714,8 @@ public class PipelineTest {
     @Test
     void conditional_direct_two_suppliers() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c == '-');
-        var supplier1 = new CharSupplier(abc, supplyPipe, 1) {
-            @Override
-            protected void join() throws InterruptedException {
-                sleep(20);
-                super.join();
-            }
-        };
-        var supplier2 = new CharSupplier(abc, supplyPipe, 1) {
-            @Override
-            protected void join() throws InterruptedException {
-                sleep(20);
-                super.join();
-            }
-        };
+        var supplier1 = new CharSupplier(abc, supplyPipe, 1);
+        var supplier2 = new CharSupplier(abc, supplyPipe, 1);
         var accum = new CharAccumulator(supplyPipe, 1);
         var pipeline = Pipeline.from(supplier1, supplier2).into(accum);
         System.out.println(pipeline);

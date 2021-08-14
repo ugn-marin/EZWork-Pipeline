@@ -84,14 +84,13 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
-    protected void onFinish(Throwable throwable) throws Exception {
+    void internalClose() {
         setEndOfInput();
-        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(throwable));
+        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(getThrowable()));
         Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
                 .map(InputWorker::getInput).forEach(Pipe::clear);
         Sugar.<OutputWorker<?>>instancesOf(pipelineWorkers, OutputWorker.class).stream()
                 .map(OutputWorker::getOutput).forEach(Pipe::clear);
-        super.onFinish(throwable);
     }
 
     /**

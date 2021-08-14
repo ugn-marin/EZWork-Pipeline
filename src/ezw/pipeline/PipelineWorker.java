@@ -42,11 +42,17 @@ public abstract class PipelineWorker implements CallableRunnable {
             throw new IllegalStateException("The pipeline worker instance cannot be reused.");
         try {
             work();
-            join();
+            if (executorService.isCalculated())
+                Concurrent.join(executorService.get());
         } catch (Throwable t) {
             setThrowable(t);
         } finally {
-            onFinish(throwable instanceof SilentStop ? null : throwable);
+            try {
+                close();
+            } finally {
+                internalClose();
+                Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+            }
         }
     }
 
@@ -67,6 +73,10 @@ public abstract class PipelineWorker implements CallableRunnable {
                 throw t;
             }
         });
+    }
+
+    Throwable getThrowable() {
+        return throwable;
     }
 
     private void setThrowable(Throwable throwable) {
@@ -117,29 +127,17 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Waits for all submitted tasks by shutting the thread pool down and awaiting termination.
-     * @throws InterruptedException If interrupted.
-     */
-    protected void join() throws InterruptedException {
-        if (executorService.isCalculated())
-            Concurrent.join(executorService.get());
-    }
-
-    /**
      * Submits all internal work.
      * @throws InterruptedException If interrupted.
      */
     protected abstract void work() throws InterruptedException;
 
     /**
-     * Runs after all internal work is done.
-     * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
-     *                  stopped by calling <code>stop</code> or <code>cancel(null)</code>.
-     * @throws Exception The throwable if not null.
+     * Called automatically when the worker is done executing or failed.
      */
-    protected void onFinish(Throwable throwable) throws Exception {
-        Sugar.throwIfNonNull(throwable);
-    }
+    protected void close() {}
+
+    void internalClose() {}
 
     /**
      * Returns a simple name of the worker.

@@ -46,18 +46,17 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
         Sugar.repeat(getParallel(), () -> submit(() -> Sugar.acceptWhile(this::get, this::push, Objects::nonNull)));
     }
 
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
-    }
-
     /**
      * Supplies an item for the output pipe.
      * @return The next item to supply, or null if no more items available.
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract O get() throws Exception;
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
+    }
 
     @Override
     protected String getSimpleName() {

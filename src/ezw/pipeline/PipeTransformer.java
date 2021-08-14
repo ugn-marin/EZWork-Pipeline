@@ -65,12 +65,6 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
         }
     }
 
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
-    }
-
     /**
      * Applies the function on an input item.
      * @param item The input item
@@ -87,6 +81,11 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
      * @throws Exception An exception terminating the pipeline.
      */
     protected abstract Collection<O> getLastItems() throws Exception;
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
+    }
 
     @Override
     protected String getSimpleName() {

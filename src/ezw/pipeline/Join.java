@@ -54,12 +54,6 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
         }
     }
 
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
-    }
-
     private void push(IndexedItem<I> indexedItem) throws InterruptedException {
         long index = indexedItem.getIndex();
         boolean push = false;
@@ -88,5 +82,10 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
             }
         }
         output.push(modified != null ? modified : indexedItem);
+    }
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
     }
 }

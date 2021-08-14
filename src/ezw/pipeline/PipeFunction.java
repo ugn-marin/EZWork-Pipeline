@@ -56,12 +56,6 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
         }
     }
 
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
-    }
-
     /**
      * Applies the function on an input item.
      * @param item The input item.
@@ -69,6 +63,11 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract O apply(I item) throws Exception;
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
+    }
 
     @Override
     protected String getSimpleName() {
