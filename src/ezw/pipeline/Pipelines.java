@@ -133,6 +133,16 @@ public abstract class Pipelines {
     }
 
     /**
+     * Constructs a supplier of a single non-null object.
+     * @param object The object to supply.
+     * @param <O> The object type.
+     * @return The supplier.
+     */
+    public static <O> PipeSupplier<O> supplier(O object) {
+        return supplier(new SupplyPipe<>(1), Stream.of(Objects.requireNonNull(object, "Object is null.")));
+    }
+
+    /**
      * Constructs a simple function.
      * @param input The input pipe.
      * @param output The output pipe.
@@ -165,6 +175,27 @@ public abstract class Pipelines {
                 return apply.apply(item);
             }
         };
+    }
+
+    /**
+     * Constructs a simple action.
+     * @param accept The accept implementation.
+     * @param <I> The items type.
+     * @return The action.
+     */
+    public static <I> PipeAction<I> action(Consumer<I> accept) {
+        return action(1, accept);
+    }
+
+    /**
+     * Constructs a simple multi-threaded action.
+     * @param concurrency The maximum parallel items accepting to allow.
+     * @param accept The accept implementation.
+     * @param <I>  The items type.
+     * @return The action.
+     */
+    public static <I> PipeAction<I> action(int concurrency, Consumer<I> accept) {
+        return action(new Pipe<>(concurrency), new Pipe<>(concurrency), concurrency, accept);
     }
 
     /**
@@ -242,6 +273,27 @@ public abstract class Pipelines {
                 return getLastItems != null ? getLastItems.get() : null;
             }
         };
+    }
+
+    /**
+     * Constructs a simple consumer.
+     * @param accept The accept implementation.
+     * @param <I> The input items type.
+     * @return The consumer.
+     */
+    public static <I> PipeConsumer<I> consumer(Consumer<I> accept) {
+        return consumer(1, accept);
+    }
+
+    /**
+     * Constructs a simple multi-threaded consumer.
+     * @param concurrency The maximum parallel items consuming to allow.
+     * @param accept The accept implementation.
+     * @param <I> The input items type.
+     * @return The consumer.
+     */
+    public static <I> PipeConsumer<I> consumer(int concurrency, Consumer<I> accept) {
+        return consumer(new Pipe<>(concurrency), concurrency, accept);
     }
 
     /**

@@ -8,8 +8,8 @@ import java.util.Objects;
 
 /**
  * A pipeline worker consuming items from an input pipe, applying a function on them and supplying them for an output
- * supply pipe. The transformation function may return 0 to N output items, thus transforming the index scope of the
- * pipeline workers down the line.
+ * supply pipe in the provided order. The transformation function may return 0 to N output items, thus transforming the
+ * index scope of the pipeline workers down the line.
  * @param <I> The input items type.
  * @param <O> The output items type.
  */

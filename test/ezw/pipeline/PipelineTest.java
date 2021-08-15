@@ -449,7 +449,7 @@ public class PipelineTest {
     @Test
     void supplier1_fork_upper1_lower1_join_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
-        CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
+        CharSupplier charSupplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(charSupplier);
 
         Pipe<Character> toUpper = new Pipe<>(smallCapacity);
@@ -471,7 +471,7 @@ public class PipelineTest {
         validate(pipeline);
         assertEquals(4, pipeline.getWorkersConcurrency());
         pipeline.run();
-        assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(switchCase(full), charAccumulator.getValue());
     }
 
     @Test
@@ -898,6 +898,23 @@ public class PipelineTest {
         assertEquals(full.length() * 5, consumer.getValue().length());
         assertEquals(full, Sugar.remove(consumer.getValue(), "null"));
         assertEquals(0, pipeline.getCancelledWork());
+    }
+
+    @Test
+    void counter_actions() throws Exception {
+        var counter = new AtomicInteger();
+        var supplier = Pipelines.supplier(counter);
+        var builder = Pipeline.from(supplier);
+        var a1 = Pipelines.action(AtomicInteger::incrementAndGet);
+        var a2 = Pipelines.action(AtomicInteger::incrementAndGet);
+        var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
+        builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
+        var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
+        var c2 = Pipelines.consumer(a3.getOutput(), AtomicInteger::incrementAndGet);
+        var pipeline = builder.join(c1, a1, a2).into(c1, c2);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(5, counter.get());
     }
 
     @Test
