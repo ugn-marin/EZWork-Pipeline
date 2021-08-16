@@ -44,7 +44,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
         int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersParallel()));
+                "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersConcurrency()));
         var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
         sb.append(pipelineChartBuilder.get());
         pipelineWarnings = pipelineChartBuilder.getWarnings();
@@ -58,8 +58,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * Returns the maximum number of auto-allocated threads that this pipeline's workers can use. That doesn't include
      * the threads managing and joining the workers, and the various pipe connectors.
      */
-    public int getWorkersParallel() {
-        return pipelineWorkers.stream().mapToInt(PipelineWorker::getParallel).sum();
+    public int getWorkersConcurrency() {
+        return pipelineWorkers.stream().mapToInt(PipelineWorker::getConcurrency).sum();
     }
 
     @Override
@@ -74,7 +74,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Pushes an item into the supply pipe feeding the pipeline. This is the entry point of an open pipeline, although
-     * might be used for additional supply for a closed pipeline as well, as long as end of input wasn't reached.
+     * it might be used for additional supply for a closed pipeline as well, as long as end of input wasn't reached.
      * @param item The item.
      * @throws InterruptedException If interrupted while attempting to push the item.
      */
@@ -84,14 +84,13 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
-    protected void onFinish(Throwable throwable) throws Exception {
+    void internalClose() {
         setEndOfInput();
-        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(throwable));
+        pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(getThrowable()));
         Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
                 .map(InputWorker::getInput).forEach(Pipe::clear);
         Sugar.<OutputWorker<?>>instancesOf(pipelineWorkers, OutputWorker.class).stream()
                 .map(OutputWorker::getOutput).forEach(Pipe::clear);
-        super.onFinish(throwable);
     }
 
     /**
@@ -140,24 +139,18 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Attaches one or more functions to the pipeline.
          * @param pipeFunctions One or more functions.
-         * @param <I> The input items type.
-         * @param <O> The output items type.
          * @return This builder.
          */
-        @SafeVarargs
-        public final <I, O> Builder<S> through(PipeFunction<I, O>... pipeFunctions) {
+        public Builder<S> through(PipeFunction<?, ?>... pipeFunctions) {
             return attach(pipeFunctions);
         }
 
         /**
          * Attaches one or more transformers to the pipeline.
          * @param pipeTransformers One or more transformers.
-         * @param <I> The input items type.
-         * @param <O> The output items type.
          * @return This builder.
          */
-        @SafeVarargs
-        public final <I, O> Builder<S> through(PipeTransformer<I, O>... pipeTransformers) {
+        public Builder<S> through(PipeTransformer<?, ?>... pipeTransformers) {
             return attach(pipeTransformers);
         }
 
@@ -175,7 +168,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Creates a fork from the input pipe into the input workers (outputs of the fork). This does not attach the
-         * workers.
+         * workers to the pipeline.
          * @param input The input pipe.
          * @param outputs The input workers.
          * @param <I> The items type.
@@ -190,7 +183,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Creates a fork from the output worker (input of the fork) into the input workers (outputs of the fork). This
-         * does not attach the workers.
+         * does not attach the workers to the pipeline.
          * @param input The output worker.
          * @param outputs The input workers.
          * @param <I> The items type.
@@ -215,7 +208,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Creates a join from the output workers (inputs of the join) into the output pipe. This does not attach the
-         * workers.
+         * workers to the pipeline.
          * @param output The output pipe.
          * @param inputs The output workers.
          * @param <I> The items type.
@@ -230,7 +223,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Creates a join from the output workers (inputs of the join) into the input worker (output of the join). This
-         * does not attach the workers.
+         * does not attach the workers to the pipeline.
          * @param output The input worker.
          * @param inputs The output workers.
          * @param <I> The items type.
@@ -244,10 +237,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Extends the given pipe in this pipeline.
          * @param pipe The pipe.
-         * @param <I> The items type.
          * @return This builder.
          */
-        public <I> Builder<S> extend(Pipe<I> pipe) {
+        public Builder<S> extend(Pipe<?> pipe) {
             return attach(new Extender<>(pipe));
         }
 

@@ -5,12 +5,12 @@ package ezw.pipeline;
  */
 abstract class PipeConnector extends PipelineWorker {
 
-    PipeConnector(int parallel) {
-        super(parallel);
+    PipeConnector(int concurrency) {
+        super(concurrency);
     }
 
     @Override
-    protected int getParallel() {
+    protected int getConcurrency() {
         return 0;
     }
 

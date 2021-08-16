@@ -8,8 +8,8 @@ import java.util.Objects;
 
 /**
  * A pipeline worker consuming items from an input pipe, applying a function on them and supplying them for an output
- * supply pipe. The transformation function may return 0 to N output items, thus transforming the index scope of the
- * pipeline workers down the line.
+ * supply pipe in the provided order. The transformation function may return 0 to N output items, thus transforming the
+ * index scope of the pipeline workers down the line.
  * @param <I> The input items type.
  * @param <O> The output items type.
  */
@@ -31,10 +31,10 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
      * Constructs a multi-threaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
-     * @param parallel The maximum parallel items transforming to allow.
+     * @param concurrency The maximum parallel items transforming to allow.
      */
-    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int parallel) {
-        super(Sugar.requireRange(parallel, 1, null));
+    public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int concurrency) {
+        super(Sugar.requireRange(concurrency, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
@@ -65,12 +65,6 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
         }
     }
 
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
-    }
-
     /**
      * Applies the function on an input item.
      * @param item The input item
@@ -87,6 +81,11 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
      * @throws Exception An exception terminating the pipeline.
      */
     protected abstract Collection<O> getLastItems() throws Exception;
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
+    }
 
     @Override
     protected String getSimpleName() {

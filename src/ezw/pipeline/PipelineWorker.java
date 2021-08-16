@@ -12,24 +12,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A callable runnable executing in a pipeline.
  */
 public abstract class PipelineWorker implements CallableRunnable {
-    private final int parallel;
+    private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
-    PipelineWorker(int parallel) {
-        this.parallel = parallel;
-        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(parallel));
+    PipelineWorker(int concurrency) {
+        this.concurrency = concurrency;
+        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 
     /**
-     * Returns the parallel level.
+     * Returns the concurrency level of the worker.
      */
-    protected int getParallel() {
-        return parallel;
+    protected int getConcurrency() {
+        return concurrency;
     }
 
     /**
@@ -42,24 +42,30 @@ public abstract class PipelineWorker implements CallableRunnable {
             throw new IllegalStateException("The pipeline worker instance cannot be reused.");
         try {
             work();
-            join();
+            if (executorService.isCalculated())
+                Concurrent.join(executorService.get());
         } catch (Throwable t) {
             setThrowable(t);
         } finally {
-            onFinish(throwable instanceof SilentStop ? null : throwable);
+            try {
+                close();
+            } finally {
+                internalClose();
+                Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+            }
         }
     }
 
     /**
-     * Submits internal work as a cancellable task. Blocked if parallel level reached. The work execution failure will
-     * trigger cancellation of all submitted work and failure of the entire worker.
+     * Submits internal work as a cancellable task. Blocked if concurrency level reached. The work execution failure
+     * will trigger cancellation of all submitted work and failure of the entire worker.
      * @param work Internal work.
      * @throws InterruptedRuntimeException If interrupted while trying to submit the work.
      */
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
+            Sugar.throwIfNonNull(throwable);
             try {
-                Sugar.throwIfNonNull(throwable);
                 return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
@@ -67,6 +73,10 @@ public abstract class PipelineWorker implements CallableRunnable {
                 throw t;
             }
         });
+    }
+
+    Throwable getThrowable() {
+        return throwable;
     }
 
     private void setThrowable(Throwable throwable) {
@@ -117,29 +127,17 @@ public abstract class PipelineWorker implements CallableRunnable {
     }
 
     /**
-     * Waits for all submitted tasks by shutting the thread pool down and awaiting termination.
-     * @throws InterruptedException If interrupted.
-     */
-    protected void join() throws InterruptedException {
-        if (executorService.isCalculated())
-            Concurrent.join(executorService.get());
-    }
-
-    /**
      * Submits all internal work.
      * @throws InterruptedException If interrupted.
      */
     protected abstract void work() throws InterruptedException;
 
     /**
-     * Runs after all internal work is done.
-     * @param throwable The throwable thrown by the work, or any submitted work. Null if finished successfully, or if
-     *                  stopped by calling <code>stop</code> or <code>cancel(null)</code>.
-     * @throws Exception The throwable if not null.
+     * Called automatically when the worker is done executing or failed.
      */
-    protected void onFinish(Throwable throwable) throws Exception {
-        Sugar.throwIfNonNull(throwable);
-    }
+    protected void close() {}
+
+    void internalClose() {}
 
     /**
      * Returns a simple name of the worker.
@@ -157,8 +155,8 @@ public abstract class PipelineWorker implements CallableRunnable {
     @Override
     public String toString() {
         String string = getSimpleName();
-        if (getParallel() > 1)
-            string += String.format("[%d]", getParallel());
+        if (getConcurrency() > 1)
+            string += String.format("[%d]", getConcurrency());
         return string;
     }
 

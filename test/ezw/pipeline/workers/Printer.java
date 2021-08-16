@@ -19,8 +19,7 @@ public class Printer<I> extends PipeConsumer<I> {
     }
 
     @Override
-    protected void onFinish(Throwable throwable) throws Exception {
+    protected void close() {
         ps.flush();
-        super.onFinish(throwable);
     }
 }

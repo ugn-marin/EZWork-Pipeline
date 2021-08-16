@@ -27,7 +27,7 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
         if (inputs.length < 2)
             throw new IllegalArgumentException("Join requires at least 2 input pipes.");
         if (!Sugar.instancesOf(List.of(inputs), SupplyGate.class).isEmpty())
-            throw new IllegalArgumentException("Join input pipes cannot have supply pipes.");
+            throw new IllegalArgumentException("Joining different index scopes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
         remainingInputs = new HashMap<>(inputs.length);
@@ -52,12 +52,6 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                 }
             });
         }
-    }
-
-    @Override
-    protected void join() throws InterruptedException {
-        super.join();
-        output.setEndOfInput();
     }
 
     private void push(IndexedItem<I> indexedItem) throws InterruptedException {
@@ -88,5 +82,10 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
             }
         }
         output.push(modified != null ? modified : indexedItem);
+    }
+
+    @Override
+    void internalClose() {
+        output.setEndOfInput();
     }
 }

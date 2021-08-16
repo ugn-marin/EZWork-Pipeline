@@ -46,8 +46,7 @@ final class Fork<I> extends PipeConnector implements InputWorker<I> {
     }
 
     @Override
-    protected void join() throws InterruptedException {
-        super.join();
+    void internalClose() {
         Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
     }
 }

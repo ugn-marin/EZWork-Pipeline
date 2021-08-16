@@ -2,6 +2,8 @@ package ezw.pipeline;
 
 import ezw.concurrent.Interruptible;
 
+import java.util.function.Consumer;
+
 /**
  * An entry point of items in a new index scope.
  * @param <S> The supplied items type.
@@ -19,7 +21,7 @@ public interface SupplyGate<S> {
     /**
      * Wraps this supply gate implementation in an interruptible Consumer.
      */
-    default java.util.function.Consumer<S> toConsumer() {
+    default Consumer<S> toConsumer() {
         return item -> Interruptible.run(() -> push(item));
     }
 }

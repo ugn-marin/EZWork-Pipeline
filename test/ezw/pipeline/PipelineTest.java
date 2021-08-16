@@ -1,6 +1,7 @@
 package ezw.pipeline;
 
 import ezw.concurrent.Concurrent;
+import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
 import ezw.util.function.UniquePredicate;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -64,21 +66,21 @@ public class PipelineTest {
     void constructor_definitions() {
         SupplyPipe<Object> pipe = new SupplyPipe<>(1);
         PipelineWorker worker = Pipelines.supplier(pipe, () -> null);
-        assertEquals(1, worker.getParallel());
+        assertEquals(1, worker.getConcurrency());
         worker = Pipelines.supplier(pipe, 5, () -> null);
-        assertEquals(5, worker.getParallel());
+        assertEquals(5, worker.getConcurrency());
         worker = Pipelines.function(pipe, pipe, x -> null);
-        assertEquals(1, worker.getParallel());
+        assertEquals(1, worker.getConcurrency());
         worker = Pipelines.function(pipe, pipe, 5, x -> null);
-        assertEquals(5, worker.getParallel());
+        assertEquals(5, worker.getConcurrency());
         worker = Pipelines.transformer(pipe, pipe, x -> null, () -> null);
-        assertEquals(1, worker.getParallel());
+        assertEquals(1, worker.getConcurrency());
         worker = Pipelines.transformer(pipe, pipe, 5, x -> null, () -> null);
-        assertEquals(5, worker.getParallel());
+        assertEquals(5, worker.getConcurrency());
         worker = Pipelines.consumer(pipe, x -> {});
-        assertEquals(1, worker.getParallel());
+        assertEquals(1, worker.getConcurrency());
         worker = Pipelines.consumer(pipe, 5, x -> {});
-        assertEquals(5, worker.getParallel());
+        assertEquals(5, worker.getConcurrency());
     }
 
     @Test
@@ -195,6 +197,25 @@ public class PipelineTest {
         var pipeline = Pipelines.direct(() -> null, x -> {});
         System.out.println(pipeline);
         pipeline.interrupt();
+    }
+
+    @Test
+    void stop_then_run() throws Exception {
+        var pipeline = Pipelines.direct(() -> 1, x -> fail("Shouldn't run"));
+        System.out.println(pipeline);
+        pipeline.stop();
+        pipeline.run();
+    }
+
+    @Test
+    void interrupt_then_run() throws Exception {
+        var pipeline = Pipelines.direct(() -> 1, x -> fail("Shouldn't run"));
+        System.out.println(pipeline);
+        pipeline.interrupt();
+        try {
+            pipeline.run();
+            fail("Not interrupted");
+        } catch (InterruptedException ignore) {}
     }
 
     @Test
@@ -447,7 +468,7 @@ public class PipelineTest {
     @Test
     void supplier1_fork_upper1_lower1_join_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
-        CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
+        CharSupplier charSupplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(charSupplier);
 
         Pipe<Character> toUpper = new Pipe<>(smallCapacity);
@@ -467,9 +488,9 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator);
         validate(pipeline);
-        assertEquals(4, pipeline.getWorkersParallel());
+        assertEquals(4, pipeline.getWorkersConcurrency());
         pipeline.run();
-        assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(switchCase(full), charAccumulator.getValue());
     }
 
     @Test
@@ -501,7 +522,7 @@ public class PipelineTest {
 
         var pipeline = builder.into(charAccumulator, new Printer<>(System.out, toPrint, 2));
         validate(pipeline);
-        assertEquals(8, pipeline.getWorkersParallel());
+        assertEquals(8, pipeline.getWorkersConcurrency());
         pipeline.run();
         assertEquals(switchCase(five), charAccumulator.getValue());
         assertEquals(five.length(), supplyPipe.getItemsPushed());
@@ -556,7 +577,7 @@ public class PipelineTest {
 
         var pipeline = builder.fork(mix, toAccum, toPrint).into(charAccumulator, printer);
         validate(pipeline);
-        assertEquals(9, pipeline.getWorkersParallel());
+        assertEquals(9, pipeline.getWorkersConcurrency());
         pipeline.run();
         // Join prefers modified - here different case
         assertEquals(switchCase(five), charAccumulator.getValue());
@@ -714,20 +735,8 @@ public class PipelineTest {
     @Test
     void conditional_direct_two_suppliers() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c == '-');
-        var supplier1 = new CharSupplier(abc, supplyPipe, 1) {
-            @Override
-            protected void join() throws InterruptedException {
-                sleep(20);
-                super.join();
-            }
-        };
-        var supplier2 = new CharSupplier(abc, supplyPipe, 1) {
-            @Override
-            protected void join() throws InterruptedException {
-                sleep(20);
-                super.join();
-            }
-        };
+        var supplier1 = new CharSupplier(abc, supplyPipe, 1);
+        var supplier2 = new CharSupplier(abc, supplyPipe, 1);
         var accum = new CharAccumulator(supplyPipe, 1);
         var pipeline = Pipeline.from(supplier1, supplier2).into(accum);
         System.out.println(pipeline);
@@ -885,7 +894,7 @@ public class PipelineTest {
             sleep(1000);
             pipeline.stop();
         });
-        assertEquals(20, pipeline.getWorkersParallel());
+        assertEquals(20, pipeline.getWorkersConcurrency());
         pipeline.run();
         assertEquals(20, pipeline.getCancelledWork());
     }
@@ -908,6 +917,23 @@ public class PipelineTest {
         assertEquals(full.length() * 5, consumer.getValue().length());
         assertEquals(full, Sugar.remove(consumer.getValue(), "null"));
         assertEquals(0, pipeline.getCancelledWork());
+    }
+
+    @Test
+    void counter_actions() throws Exception {
+        var counter = new AtomicInteger();
+        var supplier = Pipelines.supplier(counter);
+        var builder = Pipeline.from(supplier);
+        var a1 = Pipelines.action(AtomicInteger::incrementAndGet);
+        var a2 = Pipelines.action(AtomicInteger::incrementAndGet);
+        var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
+        builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
+        var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
+        var c2 = Pipelines.consumer(a3.getOutput(), AtomicInteger::incrementAndGet);
+        var pipeline = builder.join(c1, a1, a2).into(c1, c2);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(5, counter.get());
     }
 
     @Test
@@ -935,15 +961,18 @@ public class PipelineTest {
         var supplied1 = new Pipe<Character>(smallCapacity);
         var supplied2 = new Pipe<Character>(smallCapacity);
         var supplied3 = new Pipe<Character>(smallCapacity);
-        builder.extend(supplied2).fork(supplyPipe, supplied1, supplied2, supplied3);
+        var supplied4 = new Pipe<Character>(smallCapacity);
+        builder.extend(supplied2).fork(supplyPipe, supplied1, supplied2, supplied3, supplied4);
         var supplied1f = new Pipe<Character>(smallCapacity);
+        var supplied3a = new Pipe<Character>(smallCapacity);
         var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
-        builder.through(f);
-        var words = new SupplyPipe<String>(mediumCapacity);
-        var wordsTrans = new WordsTransformer(supplied3, words);
+        var a = Pipelines.action(supplied3, supplied3a, 6, (Consumer<Character>) Interruptible::sleep);
+        builder.through(f, a);
+        var words = new SupplyPipe<String>(mediumCapacity, word -> word.length() < 3);
+        var wordsTrans = new WordsTransformer(supplied4, words);
         builder.through(wordsTrans);
         var joined = new Pipe<Character>(minimumCapacity);
-        builder.join(joined, supplied1f, supplied2);
+        builder.join(joined, supplied1f, supplied2, supplied3a);
         var joinedAccum = new CharAccumulator(joined, 1);
         var wordsPrinter = new Printer<>(System.out, words, 1);
         var pipeline = builder.into(joinedAccum, wordsPrinter);
