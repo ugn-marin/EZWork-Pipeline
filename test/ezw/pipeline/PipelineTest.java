@@ -200,6 +200,25 @@ public class PipelineTest {
     }
 
     @Test
+    void stop_then_run() throws Exception {
+        var pipeline = Pipelines.direct(() -> 1, x -> fail("Shouldn't run"));
+        System.out.println(pipeline);
+        pipeline.stop();
+        pipeline.run();
+    }
+
+    @Test
+    void interrupt_then_run() throws Exception {
+        var pipeline = Pipelines.direct(() -> 1, x -> fail("Shouldn't run"));
+        System.out.println(pipeline);
+        pipeline.interrupt();
+        try {
+            pipeline.run();
+            fail("Not interrupted");
+        } catch (InterruptedException ignore) {}
+    }
+
+    @Test
     void supplier1_minimum_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
         CharSupplier charSupplier = new CharSupplier(abc, supplyPipe, 1);

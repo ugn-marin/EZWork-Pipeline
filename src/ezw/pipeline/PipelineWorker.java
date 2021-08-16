@@ -64,8 +64,8 @@ public abstract class PipelineWorker implements CallableRunnable {
      */
     void submit(CallableRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
+            Sugar.throwIfNonNull(throwable);
             try {
-                Sugar.throwIfNonNull(throwable);
                 return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
