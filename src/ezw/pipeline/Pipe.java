@@ -164,7 +164,7 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
 
     @Override
     public String toString() {
-        return String.format("-<%d>-", baseCapacity);
+        return String.format("-<P:%d>-", baseCapacity);
     }
 
     private class PipeIterator implements Iterator<IndexedItem<I>> {
