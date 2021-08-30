@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 /**
- * A queue of items supplied by a pipeline worker.
+ * A queue of items supplied by a pipeline worker, and/or from the outside.
  * @param <I> The items type.
  */
 public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
