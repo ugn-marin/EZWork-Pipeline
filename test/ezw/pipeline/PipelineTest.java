@@ -4,7 +4,6 @@ import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
-import ezw.util.function.UniquePredicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1003,6 +1002,7 @@ public class PipelineTest {
         var wordsPrinter = new Printer<>(System.out, words, 1);
         var pipeline = builder.into(joinedAccum, wordsPrinter);
         assertTrue(pipeline.getWarnings().contains(PipelineWarning.EXTENSION));
+        System.out.println(pipeline);
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
         assertNotEquals(full, joinedAccum.getValue());

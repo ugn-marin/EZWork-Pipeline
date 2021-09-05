@@ -49,7 +49,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         sb.append(pipelineChartBuilder.get());
         pipelineWarnings = pipelineChartBuilder.getWarnings();
         for (PipelineWarning warning : pipelineWarnings) {
-            sb.append(System.lineSeparator()).append(warning.getDescription());
+            sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
         toString = sb.toString();
     }
