@@ -4,7 +4,6 @@ import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
-import ezw.util.function.UniquePredicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
