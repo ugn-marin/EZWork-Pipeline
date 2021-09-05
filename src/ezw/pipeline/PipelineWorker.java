@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.concurrent.*;
 import ezw.util.Sugar;
+import ezw.util.function.UnsafeRunnable;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -9,9 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A callable runnable executing in a pipeline.
+ * An unsafe runnable executing in a pipeline.
  */
-public abstract class PipelineWorker implements CallableRunnable {
+public abstract class PipelineWorker implements UnsafeRunnable {
     private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
@@ -62,7 +63,7 @@ public abstract class PipelineWorker implements CallableRunnable {
      * @param work Internal work.
      * @throws InterruptedRuntimeException If interrupted while trying to submit the work.
      */
-    void submit(CallableRunnable work) throws InterruptedRuntimeException {
+    void submit(UnsafeRunnable work) throws InterruptedRuntimeException {
         cancellableSubmitter.get().submit(() -> {
             Sugar.throwIfNonNull(throwable);
             try {
