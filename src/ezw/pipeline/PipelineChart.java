@@ -142,11 +142,7 @@ class PipelineChart {
                 }
             });
         }
-        var lastRow = matrix.getLastRow();
-        while (lastRow.stream().allMatch(Objects::isNull)) {
-            matrix.removeRow(matrix.size().getY() - 1);
-            lastRow = matrix.getLastRow();
-        }
+        matrix.pack(true, true);
     }
 
     Set<PipelineWarning> getWarnings() {
