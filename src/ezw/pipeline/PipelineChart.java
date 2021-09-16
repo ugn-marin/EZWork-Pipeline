@@ -5,7 +5,6 @@ import ezw.util.ElasticMatrix;
 import ezw.util.Sugar;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
@@ -62,11 +61,6 @@ class PipelineChart {
             return;
         }
         var addColumn = new LazyRunnable(matrix::addColumn);
-        Consumer<Object> clearPrevious = o -> {
-            var index = matrix.indexOf(o);
-            if (index != null)
-                matrix.set(index, null);
-        };
         for (int y = 0; y < level.size(); y++) {
             var element = level.get(y);
             if (element == null)
@@ -79,7 +73,7 @@ class PipelineChart {
                     Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(fy));
                     addColumn.run();
                     for (var worker : workers) {
-                        clearPrevious.accept(worker);
+                        clearExtendedComponent(worker);
                         matrix.set(nextX, nextY++, worker);
                     }
                 } else {
@@ -102,18 +96,24 @@ class PipelineChart {
                 addColumn.run();
                 outputs.sort(Comparator.comparing(Objects::toString));
                 for (var output : outputs) {
-                    clearPrevious.accept(output);
+                    clearExtendedComponent(output);
                     matrix.set(nextX, nextY++, output);
                 }
             } else if (element instanceof OutputWorker) {
                 var output = ((OutputWorker<?>) element).getOutput();
                 addColumn.run();
-                clearPrevious.accept(output);
+                clearExtendedComponent(output);
                 matrix.set(nextX, nextY, output);
             }
         }
         if (addColumn.isCalculated())
             next();
+    }
+
+    private void clearExtendedComponent(Object o) {
+        var index = matrix.indexOf(o);
+        if (index != null)
+            matrix.set(index, null);
     }
 
     private void pack() {
@@ -155,6 +155,6 @@ class PipelineChart {
 
     @Override
     public String toString() {
-        return matrix.toString();
+        return matrix.isEmpty() ? "No chart available." : matrix.toString();
     }
 }
