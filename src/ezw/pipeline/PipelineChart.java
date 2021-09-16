@@ -142,7 +142,7 @@ class PipelineChart {
                 }
             });
         }
-        matrix.pack(true, true);
+        matrix.pack(true, false);
     }
 
     Set<PipelineWarning> getWarnings() {
