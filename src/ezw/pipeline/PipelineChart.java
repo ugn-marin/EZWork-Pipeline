@@ -120,21 +120,21 @@ class PipelineChart {
         if (matrix.isEmpty())
             return;
         for (int y = 2; y < matrix.size().getY(); y++) {
-            List<ElasticMatrix.Coordinate> blocks = new ArrayList<>();
+            List<ElasticMatrix.Coordinates> blocks = new ArrayList<>();
             int blockStart = -1;
             for (int x = 1; x < matrix.size().getX(); x++) {
                 if (blockStart == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
                         matrix.get(x, y - 1) == null) {
                     blockStart = x;
                 } else if (blockStart != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    blocks.add(ElasticMatrix.Coordinate.of(blockStart, x));
+                    blocks.add(ElasticMatrix.Coordinates.of(blockStart, x));
                     blockStart = -1;
                 } else if (blockStart != -1 && matrix.get(x, y - 1) != null) {
                     blockStart = -1;
                 }
             }
             if (blockStart != -1)
-                blocks.add(ElasticMatrix.Coordinate.of(blockStart, matrix.size().getX() - 1));
+                blocks.add(ElasticMatrix.Coordinates.of(blockStart, matrix.size().getX() - 1));
             int fy = y;
             blocks.forEach(block -> {
                 for (int x = block.getX(); x <= block.getY(); x++) {
