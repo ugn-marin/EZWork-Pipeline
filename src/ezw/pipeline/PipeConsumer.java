@@ -48,9 +48,4 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract void accept(I item) throws Exception;
-
-    @Override
-    protected String getSimpleName() {
-        return "C";
-    }
 }
