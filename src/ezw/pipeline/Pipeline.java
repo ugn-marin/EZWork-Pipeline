@@ -1,5 +1,6 @@
 package ezw.pipeline;
 
+import ezw.concurrent.Interruptible;
 import ezw.util.Sugar;
 
 import java.util.*;
@@ -52,6 +53,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
         toString = sb.toString();
+        System.err.println(new PipelineChart(pipelineWorkers, supplyPipe));
+        Interruptible.sleep(10);
     }
 
     /**
