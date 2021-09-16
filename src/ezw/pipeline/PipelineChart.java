@@ -5,11 +5,12 @@ import ezw.util.ElasticMatrix;
 import ezw.util.Sugar;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
     private final ElasticMatrix<Object> matrix = new ElasticMatrix<>();
-
+    private final Set<PipelineWarning> warnings = new LinkedHashSet<>(1);
     private final Map<Pipe<?>, List<OutputWorker<?>>> outputSuppliers = new HashMap<>();
     private final Map<Pipe<?>, List<InputWorker<?>>> inputConsumers = new HashMap<>();
     private Set<Join<?>> joins;
@@ -24,7 +25,7 @@ class PipelineChart {
         next();
         pack();
         if (!pipelineWorkers.stream().allMatch(matrix::contains))
-            System.err.println("discovery");
+            warnings.add(PipelineWarning.DISCOVERY);
     }
 
     private void classifyComponents() {
@@ -35,7 +36,7 @@ class PipelineChart {
             } else {
                 workers.add(ow);
                 workers.sort(Comparator.comparing(Objects::toString));
-                System.err.println("multiple");
+                warnings.add(PipelineWarning.MULTIPLE_INPUTS);
                 return workers;
             }
         }));
@@ -56,11 +57,16 @@ class PipelineChart {
         var level = matrix.getLastColumn();
         int nextX = matrix.size().getX();
         if (nextX > pipelineWorkers.size() * 2) {
-            System.err.println("cycle");
-            //matrix.clear();
+            warnings.add(PipelineWarning.CYCLE);
+            matrix.clear();
             return;
         }
         var addColumn = new LazyRunnable(matrix::addColumn);
+        Consumer<Object> clearPrevious = o -> {
+            var index = matrix.indexOf(o);
+            if (index != null)
+                matrix.set(index, null);
+        };
         for (int y = 0; y < level.size(); y++) {
             var element = level.get(y);
             if (element == null)
@@ -73,6 +79,7 @@ class PipelineChart {
                     Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(fy));
                     addColumn.run();
                     for (var worker : workers) {
+                        clearPrevious.accept(worker);
                         matrix.set(nextX, nextY++, worker);
                     }
                 } else {
@@ -83,7 +90,8 @@ class PipelineChart {
                     if (indexOfJoin != null) {
                         if (indexOfJoin.getX() != nextX)
                             matrix.set(indexOfJoin, null);
-                        continue;
+                        else
+                            continue;
                     }
                     addColumn.run();
                     matrix.set(nextX, nextY, join.get());
@@ -94,11 +102,13 @@ class PipelineChart {
                 addColumn.run();
                 outputs.sort(Comparator.comparing(Objects::toString));
                 for (var output : outputs) {
+                    clearPrevious.accept(output);
                     matrix.set(nextX, nextY++, output);
                 }
             } else if (element instanceof OutputWorker) {
                 var output = ((OutputWorker<?>) element).getOutput();
                 addColumn.run();
+                clearPrevious.accept(output);
                 matrix.set(nextX, nextY, output);
             }
         }
@@ -137,6 +147,10 @@ class PipelineChart {
             matrix.removeRow(matrix.size().getY() - 1);
             lastRow = matrix.getLastRow();
         }
+    }
+
+    Set<PipelineWarning> getWarnings() {
+        return warnings;
     }
 
     @Override

@@ -22,12 +22,7 @@ public enum PipelineWarning {
      * Indicates that a pipe is used in different levels of the flow, creating a potential cycle. This will probably
      * make the pipeline not work properly.
      */
-    CYCLE("Cycle detected."),
-    /**
-     * A pipe was extended without using the <code>extend</code> method in the pipeline builder. The pipeline may still
-     * be functional, but not all pipes are depicted by the pipeline chart.
-     */
-    EXTENSION("Not all extended pipes are mapped.");
+    CYCLE("Cycle detected.");
 
     private final String description;
 
