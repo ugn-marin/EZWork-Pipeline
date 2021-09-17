@@ -83,7 +83,7 @@ class PipelineChart {
                     var indexOfJoin = matrix.indexOf(join.get());
                     if (indexOfJoin != null) {
                         if (indexOfJoin.getX() != nextX)
-                            matrix.set(indexOfJoin, null);
+                            matrix.set(indexOfJoin, "---");
                         else
                             continue;
                     }
@@ -112,8 +112,12 @@ class PipelineChart {
 
     private void clearExtendedComponent(Object o) {
         var index = matrix.indexOf(o);
-        if (index != null)
+        if (index != null) {
             matrix.set(index, null);
+            if (o instanceof Pipe)
+                matrix.set(index, "-".repeat(matrix.getColumn(index.getX()).stream().mapToInt(
+                        c -> Objects.toString(c).length()).max().orElse(3)));
+        }
     }
 
     private void pack() {
@@ -158,9 +162,10 @@ class PipelineChart {
             StringBuilder lineSB = new StringBuilder(line);
             pipesLeading(lineSB, 0);
             pipesTrailing(lineSB, 0);
+            pipesExtensions(lineSB, 0);
             sb.append(lineSB).append(System.lineSeparator());
         });
-        return sb.toString().stripTrailing();
+        return Sugar.replace(sb.toString().stripTrailing(), "- -", "---");
     }
 
     private void pipesLeading(StringBuilder line, int offset) {
@@ -186,6 +191,20 @@ class PipelineChart {
             if (to < line.length() && line.charAt(to) != '-') {
                 line.replace(from + 2, to - 1, "-".repeat(to - from - 3));
                 pipesTrailing(line, to);
+            }
+        }
+    }
+
+    private void pipesExtensions(StringBuilder line, int offset) {
+        int from = line.indexOf(" --- ", offset);
+        if (from > 0) {
+            int to = from + 5;
+            while (to < line.length() && line.charAt(to) == ' ') {
+                to++;
+            }
+            if (to + 2 < line.length() && line.indexOf(" ---", to - 1) == to - 1) {
+                line.replace(from + 5, to - 1, "-".repeat(to - from - 6));
+                pipesExtensions(line, to);
             }
         }
     }
