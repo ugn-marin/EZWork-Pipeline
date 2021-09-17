@@ -19,7 +19,7 @@ public abstract class Pipelines {
     /**
      * Constructs a pipeline from the supplier into the consumer. Equivalent to:
      * <pre>
-     * Pipeline.from(supplier).into(consumer);
+     * Pipeline.from(supplier).into(consumer).build();
      * </pre>
      * @param pipeSupplier The supplier.
      * @param pipeConsumer The consumer.
@@ -27,7 +27,7 @@ public abstract class Pipelines {
      * @return The pipeline.
      */
     public static <I> Pipeline<I> direct(PipeSupplier<I> pipeSupplier, PipeConsumer<I> pipeConsumer) {
-        return Pipeline.from(pipeSupplier).into(pipeConsumer);
+        return Pipeline.from(pipeSupplier).into(pipeConsumer).build();
     }
 
     /**
@@ -51,7 +51,7 @@ public abstract class Pipelines {
      */
     @SafeVarargs
     public static <I> Pipeline<I> star(PipeSupplier<I> pipeSupplier, PipeConsumer<I>... pipeConsumers) {
-        return Pipeline.from(pipeSupplier).fork(pipeSupplier, pipeConsumers).into(pipeConsumers);
+        return Pipeline.from(pipeSupplier).fork(pipeSupplier, pipeConsumers).into(pipeConsumers).build();
     }
 
     /**
@@ -63,7 +63,7 @@ public abstract class Pipelines {
      */
     @SafeVarargs
     public static <I> Pipeline<I> star(SupplyPipe<I> supplyPipe, PipeConsumer<I>... pipeConsumers) {
-        return Pipeline.from(supplyPipe).fork(supplyPipe, pipeConsumers).into(pipeConsumers);
+        return Pipeline.from(supplyPipe).fork(supplyPipe, pipeConsumers).into(pipeConsumers).build();
     }
 
     /**

@@ -3,6 +3,7 @@ package ezw.pipeline;
 import ezw.util.Sugar;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +38,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         return new Builder<>(supplyPipe);
     }
 
-    private Pipeline(List<PipelineWorker> pipelineWorkers, SupplyPipe<S> supplyPipe) {
+    private Pipeline(List<PipelineWorker> pipelineWorkers, SupplyPipe<S> supplyPipe,
+                     Set<PipelineWarning> allowedWarnings) {
         super(pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
@@ -48,6 +50,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         var pipelineChart = new PipelineChart(pipelineWorkers, supplyPipe);
         sb.append(pipelineChart);
         pipelineWarnings = pipelineChart.getWarnings();
+        var unexpectedWarnings = pipelineWarnings.stream().filter(Predicate.not(allowedWarnings::contains))
+                .collect(Collectors.toSet());
+        if (!unexpectedWarnings.isEmpty())
+            throw new PipelineConfigurationException(unexpectedWarnings);
         for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
@@ -237,15 +243,39 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         /**
          * Attaches one or more consumers to the pipeline.
          * @param pipeConsumers One or more consumers.
-         * @return The pipeline.
+         * @return The ready builder.
          */
-        public Pipeline<S> into(PipeConsumer<?>... pipeConsumers) {
-            return new Pipeline<>(attach(pipeConsumers).pipelineWorkers, supplyPipe);
+        public ReadyBuilder<S> into(PipeConsumer<?>... pipeConsumers) {
+            return new ReadyBuilder<>(attach(pipeConsumers).pipelineWorkers, supplyPipe);
         }
 
         private Builder<S> attach(PipelineWorker... pipelineWorkers) {
             this.pipelineWorkers.addAll(List.of(Sugar.requireFull(pipelineWorkers)));
             return this;
+        }
+    }
+
+    /**
+     * A ready pipeline builder.
+     * @param <S> The type of items supplied at the start of the pipeline.
+     */
+    public static final class ReadyBuilder<S> {
+        private final List<PipelineWorker> pipelineWorkers;
+        private final SupplyPipe<S> supplyPipe;
+
+        private ReadyBuilder(List<PipelineWorker> pipelineWorkers, SupplyPipe<S> supplyPipe) {
+            this.pipelineWorkers = pipelineWorkers;
+            this.supplyPipe = supplyPipe;
+        }
+
+        /**
+         * Builds the pipeline.
+         * @param allowedWarnings Optional allowed pipeline warnings.
+         * @return The pipeline.
+         * @throws PipelineConfigurationException If got pipeline warnings not listed in <code>allowedWarnings</code>.
+         */
+        public Pipeline<S> build(PipelineWarning... allowedWarnings) {
+            return new Pipeline<>(pipelineWorkers, supplyPipe, Set.of(allowedWarnings));
         }
     }
 }
