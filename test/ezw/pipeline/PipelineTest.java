@@ -931,8 +931,8 @@ public class PipelineTest {
         var counter = new AtomicInteger();
         var supplier = Pipelines.supplier(counter);
         var builder = Pipeline.from(supplier);
-        var a1 = Pipelines.action(AtomicInteger::incrementAndGet);
-        var a2 = Pipelines.action(AtomicInteger::incrementAndGet);
+        var a1 = Pipelines.action(new Pipe<>(1), new Pipe<>(10), AtomicInteger::incrementAndGet);
+        var a2 = Pipelines.action(new Pipe<>(2), new Pipe<>(2), AtomicInteger::incrementAndGet);
         var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
         builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
         var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
