@@ -150,6 +150,8 @@ public abstract class PipelineWorker implements UnsafeRunnable {
             clazz = clazz.getSuperclass();
             simpleName = clazz.getSimpleName();
         }
+        if (simpleName.length() > 5 && clazz.getPackage().equals(PipelineWorker.class.getPackage()))
+            simpleName = String.valueOf(simpleName.toCharArray()[4]);
         return simpleName;
     }
 
