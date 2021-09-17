@@ -86,9 +86,4 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
     void internalClose() {
         output.setEndOfInput();
     }
-
-    @Override
-    protected String getSimpleName() {
-        return "T";
-    }
 }

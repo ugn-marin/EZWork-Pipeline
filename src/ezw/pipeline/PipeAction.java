@@ -39,9 +39,4 @@ public abstract class PipeAction<I> extends PipeFunction<I, I> implements Unsafe
      * @throws Exception An exception terminating the pipeline.
      */
     public abstract void accept(I item) throws Exception;
-
-    @Override
-    protected String getSimpleName() {
-        return "A";
-    }
 }

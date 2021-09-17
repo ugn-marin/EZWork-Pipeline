@@ -45,9 +45,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersConcurrency()));
-        var pipelineChartBuilder = new PipelineChartBuilder(pipelineWorkers);
-        sb.append(pipelineChartBuilder.get());
-        pipelineWarnings = pipelineChartBuilder.getWarnings();
+        var pipelineChart = new PipelineChart(pipelineWorkers, supplyPipe);
+        sb.append(pipelineChart);
+        pipelineWarnings = pipelineChart.getWarnings();
         for (PipelineWarning warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
@@ -232,15 +232,6 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         public final <I> Builder<S> join(InputWorker<I> output, OutputWorker<I>... inputs) {
             return join(output.getInput(), inputs);
-        }
-
-        /**
-         * Extends the given pipe in this pipeline.
-         * @param pipe The pipe.
-         * @return This builder.
-         */
-        public Builder<S> extend(Pipe<?> pipe) {
-            return attach(new Extender<>(pipe));
         }
 
         /**

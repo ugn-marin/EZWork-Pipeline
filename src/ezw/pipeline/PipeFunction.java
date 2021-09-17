@@ -68,9 +68,4 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
     void internalClose() {
         output.setEndOfInput();
     }
-
-    @Override
-    protected String getSimpleName() {
-        return "F";
-    }
 }
