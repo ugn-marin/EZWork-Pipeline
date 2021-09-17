@@ -151,6 +151,42 @@ class PipelineChart {
 
     @Override
     public String toString() {
-        return matrix.isEmpty() ? "No chart available." : matrix.toString();
+        if (matrix.isEmpty())
+            return "No chart available.";
+        StringBuilder sb = new StringBuilder();
+        matrix.toString().lines().forEach(line -> {
+            StringBuilder lineSB = new StringBuilder(line);
+            pipesLeading(lineSB, 0);
+            pipesTrailing(lineSB, 0);
+            sb.append(lineSB).append(System.lineSeparator());
+        });
+        return sb.toString().stripTrailing();
+    }
+
+    private void pipesLeading(StringBuilder line, int offset) {
+        int to = line.indexOf("  -<", offset);
+        if (to > 0) {
+            int from = to - 1;
+            while (from > offset && line.charAt(from) == ' ') {
+                from--;
+            }
+            if (from > offset && line.charAt(from) != '-')
+                line.replace(from + 2, to + 2, "-".repeat(to - from));
+            pipesLeading(line, to + 4);
+        }
+    }
+
+    private void pipesTrailing(StringBuilder line, int offset) {
+        int from = line.indexOf(">-  ", offset);
+        if (from > 0) {
+            int to = from + 4;
+            while (to < line.length() && line.charAt(to) == ' ') {
+                to++;
+            }
+            if (to < line.length() && line.charAt(to) != '-') {
+                line.replace(from + 2, to - 1, "-".repeat(to - from - 3));
+                pipesTrailing(line, to);
+            }
+        }
     }
 }
