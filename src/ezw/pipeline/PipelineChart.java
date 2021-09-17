@@ -5,6 +5,7 @@ import ezw.util.Matrix;
 import ezw.util.Sugar;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
@@ -23,6 +24,8 @@ class PipelineChart {
         matrix.addColumn(supplyPipe);
         next();
         pack();
+        rearrange();
+        joinInputsTrailing();
         if (!pipelineWorkers.stream().allMatch(matrix::contains))
             warnings.add(PipelineWarning.DISCOVERY);
     }
@@ -115,7 +118,7 @@ class PipelineChart {
         if (index != null) {
             matrix.set(index, null);
             if (o instanceof Pipe)
-                matrix.set(index, "-".repeat(matrix.getColumn(index.getX()).stream().mapToInt(
+                matrix.set(index, "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull).mapToInt(
                         c -> Objects.toString(c).length()).max().orElse(3)));
         }
     }
@@ -147,6 +150,36 @@ class PipelineChart {
             });
         }
         matrix.pack(true, false);
+    }
+
+    private void rearrange() {
+        matrix.getColumns().stream().filter(column -> column.stream().filter(Objects::nonNull).map(Object::getClass)
+                .collect(Collectors.toSet()).contains(Join.class) && column.contains(null)).forEach(column -> {
+            List<Integer> nullIndexes = new ArrayList<>();
+            for (int y = column.size() - 1; y >= 0; y--) {
+                if (column.get(y) == null)
+                    nullIndexes.add(y);
+            }
+            for (int y = 0; y < column.size(); y++) {
+                if (nullIndexes.isEmpty())
+                    break;
+                var o = column.get(y);
+                if (o != null && !(o instanceof Join))
+                    matrix.swapRows(y, Sugar.removeLast(nullIndexes));
+            }
+        });
+        for (int y = 0; y < (matrix.size().getY() - 1) / 2; y++) {
+            matrix.swapRows(y, y + 1);
+        }
+    }
+
+    private void joinInputsTrailing() {
+        joins.stream().flatMap(join -> Arrays.stream(join.getInputs())).forEach(pipe -> {
+            var index = matrix.indexOf(pipe);
+            String string = pipe.toString();
+            matrix.set(index, string + "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull)
+                    .mapToInt(c -> Objects.toString(c).length()).max().orElse(string.length()) - string.length()));
+        });
     }
 
     Set<PipelineWarning> getWarnings() {
