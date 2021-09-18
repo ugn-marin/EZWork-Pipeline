@@ -57,9 +57,4 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
     void internalClose() {
         output.setEndOfInput();
     }
-
-    @Override
-    protected String getSimpleName() {
-        return "S";
-    }
 }

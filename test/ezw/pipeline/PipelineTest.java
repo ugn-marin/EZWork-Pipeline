@@ -675,6 +675,23 @@ public class PipelineTest {
     }
 
     @Test
+    void stream_parallel_accumulator1slow() throws Exception {
+        var supplyPipe = new SupplyPipe<Character>(smallCapacity);
+        var supplier = Pipelines.supplier(supplyPipe, five.chars().mapToObj(c -> (char) c).parallel());
+        var accumulator = new CharAccumulator(supplyPipe, 1) {
+            @Override
+            public void accept(Character item) throws InterruptedException {
+                sleep(4);
+                super.accept(item);
+            }
+        };
+        var pipeline = Pipelines.direct(supplier, accumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five, accumulator.getValue());
+    }
+
+    @Test
     void supplier1_transformer1_fork_printer_counter() throws Exception {
         var supplier = new CharSupplier(five, new SupplyPipe<>(largeCapacity), 1);
         var transformer = new WordsTransformer(supplier.getOutput(), new SupplyPipe<>(mediumCapacity), 1);
