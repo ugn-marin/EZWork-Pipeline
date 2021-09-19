@@ -19,7 +19,7 @@ final class Fork<I> extends PipeConnector implements InputWorker<I> {
     Fork(Pipe<I> input, Pipe<I>... outputs) {
         super((int) Arrays.stream(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyGate)).count());
         if (outputs.length < 2)
-            throw new IllegalArgumentException("Fork requires at least 2 output pipes.");
+            throw new PipelineConfigurationException("Fork requires at least 2 output pipes.");
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.outputs = outputs;
     }

@@ -35,6 +35,9 @@ class PipelineChart {
         outputWorkers.forEach(ow -> outputSuppliers.compute(ow.getOutput(), (pipe, workers) -> {
             if (workers == null) {
                 return new ArrayList<>(List.of(ow));
+            } else if (!(pipe instanceof SupplyGate)) {
+                throw new PipelineConfigurationException("Multiple workers push into the same pipe using different " +
+                        "index scopes.");
             } else {
                 workers.add(ow);
                 workers.sort(Comparator.comparing(Objects::toString));

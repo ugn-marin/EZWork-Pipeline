@@ -7,10 +7,14 @@ import java.util.stream.Collectors;
  * An exception thrown by the pipeline building logic, indicating an illegal pipeline build.
  */
 public class PipelineConfigurationException extends RuntimeException {
-    private final Set<PipelineWarning> pipelineWarnings;
+    private Set<PipelineWarning> pipelineWarnings;
+
+    PipelineConfigurationException(String message) {
+        super(message);
+    }
 
     PipelineConfigurationException(Set<PipelineWarning> pipelineWarnings) {
-        super(describeWarnings(pipelineWarnings));
+        this(describeWarnings(pipelineWarnings));
         this.pipelineWarnings = pipelineWarnings;
     }
 
@@ -24,7 +28,7 @@ public class PipelineConfigurationException extends RuntimeException {
     }
 
     /**
-     * Returns the warnings that caused this exception.
+     * Returns the warnings that caused this exception, if any.
      */
     public Set<PipelineWarning> getWarnings() {
         return pipelineWarnings;

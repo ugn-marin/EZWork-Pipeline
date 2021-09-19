@@ -25,9 +25,9 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
     Join(Pipe<I> output, Pipe<I>... inputs) {
         super(Sugar.requireNoneNull(inputs).length);
         if (inputs.length < 2)
-            throw new IllegalArgumentException("Join requires at least 2 input pipes.");
+            throw new PipelineConfigurationException("Join requires at least 2 input pipes.");
         if (!Sugar.instancesOf(List.of(inputs), SupplyGate.class).isEmpty())
-            throw new IllegalArgumentException("Joining different index scopes.");
+            throw new PipelineConfigurationException("Joining different index scopes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
         remainingInputs = new HashMap<>(inputs.length);

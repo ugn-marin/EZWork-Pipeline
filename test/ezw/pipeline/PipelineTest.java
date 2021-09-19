@@ -127,7 +127,7 @@ public class PipelineTest {
         try {
             Pipeline.from(pipe).join(pipe, pipe);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (PipelineConfigurationException e) {
             System.out.println(e.getMessage());
         }
         try {
@@ -140,7 +140,7 @@ public class PipelineTest {
             Pipeline.from(Pipelines.supplier(new SupplyPipe<>(1), () -> null),
                     Pipelines.supplier(new SupplyPipe<>(1), () -> null));
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (PipelineConfigurationException e) {
             System.out.println(e.getMessage());
         }
         // End of input

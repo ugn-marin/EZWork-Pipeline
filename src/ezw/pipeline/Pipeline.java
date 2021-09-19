@@ -133,7 +133,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
             var supplyPipes = Arrays.stream(Sugar.requireFull(pipeSuppliers)).map(PipeSupplier::getOutput)
                     .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
-                throw new IllegalArgumentException("The pipeline suppliers must feed exactly 1 supply pipe.");
+                throw new PipelineConfigurationException("The pipeline suppliers must feed exactly 1 supply pipe.");
             supplyPipe = (SupplyPipe<S>) supplyPipes.stream().findFirst().get();
             attach(pipeSuppliers);
         }
