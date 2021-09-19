@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.concurrent.LazyRunnable;
 import ezw.util.Matrix;
+import ezw.util.Range;
 import ezw.util.Sugar;
 
 import java.util.*;
@@ -68,8 +69,8 @@ class PipelineChart {
 
     private void next() {
         var level = matrix.getLastColumn();
-        int nextX = matrix.size().getX();
-        if (nextX > pipelineWorkers.size() * 2) {
+        int x = matrix.size().getX();
+        if (x > pipelineWorkers.size() * 2) {
             warnings.add(PipelineWarning.CYCLE);
             matrix.clear();
             return;
@@ -79,48 +80,68 @@ class PipelineChart {
             if (element == null)
                 continue;
             int y = matrix.indexOf(element).getY();
-            int nextY = y;
-            if (element instanceof Pipe) {
-                var workers = inputConsumers.get(element);
-                if (workers != null) {
-                    Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(y));
-                    addColumn.run();
-                    for (var worker : workers) {
-                        clearExtendedComponent(worker);
-                        matrix.set(nextX, nextY++, worker);
-                    }
-                } else {
-                    var join = joins.stream().filter(j -> List.of(j.getInputs()).contains(element)).findFirst();
-                    if (join.isEmpty())
-                        continue;
-                    var indexOfJoin = matrix.indexOf(join.get());
-                    if (indexOfJoin != null) {
-                        if (indexOfJoin.getX() != nextX)
-                            matrix.set(indexOfJoin, "---");
-                        else
-                            continue;
-                    }
-                    addColumn.run();
-                    matrix.set(nextX, nextY, join.get());
-                }
-            } else if (element instanceof Fork) {
-                var outputs = new ArrayList<>(List.of(((Fork<?>) element).getOutputs()));
-                Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(y));
-                addColumn.run();
-                outputs.sort(Comparator.comparing(Objects::toString));
-                for (var output : outputs) {
-                    clearExtendedComponent(output);
-                    matrix.set(nextX, nextY++, output);
-                }
-            } else if (element instanceof OutputWorker) {
-                var output = ((OutputWorker<?>) element).getOutput();
-                addColumn.run();
-                clearExtendedComponent(output);
-                matrix.set(nextX, nextY, output);
-            }
+            if (element instanceof Pipe)
+                addPipeOutputs(x, y, (Pipe<?>) element, addColumn);
+            else if (element instanceof Fork)
+                addForkOutputs(x, y, (Fork<?>) element, addColumn);
+            else if (element instanceof OutputWorker)
+                addOutputPipe(x, y, (OutputWorker<?>) element, addColumn);
         }
         if (addColumn.isCalculated())
             next();
+    }
+
+    private void addPipeOutputs(int x, int y, Pipe<?> pipe, Runnable addColumn) {
+        var workers = inputConsumers.get(pipe);
+        if (workers != null) {
+            addPipeWorkers(x, y, workers, addColumn);
+        } else {
+            addPipeJoin(x, y, pipe, addColumn);
+        }
+    }
+
+    private void addPipeWorkers(int x, int y, List<InputWorker<?>> workers, Runnable addColumn) {
+        Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(y));
+        addColumn.run();
+        int nextY = y;
+        for (var worker : workers) {
+            clearExtendedComponent(worker);
+            matrix.set(x, nextY++, worker);
+        }
+    }
+
+    private void addPipeJoin(int x, int y, Pipe<?> pipe, Runnable addColumn) {
+        var join = joins.stream().filter(j -> List.of(j.getInputs()).contains(pipe)).findFirst();
+        if (join.isEmpty())
+            return;
+        var indexOfJoin = matrix.indexOf(join.get());
+        if (indexOfJoin != null) {
+            if (indexOfJoin.getX() != x)
+                matrix.set(indexOfJoin, "---");
+            else
+                return;
+        }
+        addColumn.run();
+        matrix.set(x, y, join.get());
+    }
+
+    private void addForkOutputs(int x, int y, Fork<?> fork, Runnable addColumn) {
+        var outputs = new ArrayList<>(List.of(fork.getOutputs()));
+        Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(y));
+        addColumn.run();
+        outputs.sort(Comparator.comparing(Objects::toString));
+        int nextY = y;
+        for (var output : outputs) {
+            clearExtendedComponent(output);
+            matrix.set(x, nextY++, output);
+        }
+    }
+
+    private void addOutputPipe(int x, int y, OutputWorker<?> worker, Runnable addColumn) {
+        var output = worker.getOutput();
+        addColumn.run();
+        clearExtendedComponent(output);
+        matrix.set(x, y, output);
     }
 
     private void clearExtendedComponent(Object o) {
@@ -137,28 +158,28 @@ class PipelineChart {
         if (matrix.isEmpty())
             return;
         for (int y = 2; y < matrix.size().getY(); y++) {
-            List<Matrix.Block> blocks = new ArrayList<>();
-            int blockStart = -1;
+            List<Range> ranges = new ArrayList<>();
+            int start = -1;
             for (int x = 1; x < matrix.size().getX(); x++) {
-                if (blockStart == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
+                if (start == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
                         matrix.get(x, y - 1) == null) {
-                    blockStart = x;
-                } else if (blockStart != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    blocks.add(Matrix.Block.of(blockStart, y, x, y));
-                    blockStart = -1;
-                } else if (blockStart != -1 && matrix.get(x, y - 1) != null) {
-                    blockStart = -1;
+                    start = x;
+                } else if (start != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
+                    ranges.add(Range.of(start, x));
+                    start = -1;
+                } else if (start != -1 && matrix.get(x, y - 1) != null) {
+                    start = -1;
                 }
             }
-            if (blockStart != -1)
-                blocks.add(Matrix.Block.of(blockStart, y, matrix.size().getX() - 1, y));
-            raiseBlocks(blocks);
+            if (start != -1)
+                ranges.add(Range.of(start, matrix.size().getX() - 1));
+            raiseRanges(y, ranges);
         }
         matrix.pack(true, false);
     }
 
-    private void raiseBlocks(List<Matrix.Block> blocks) {
-        blocks.forEach(block -> block.forEach(index -> matrix.swap(index.getX(), index.getY(), index.getX(), index.getY() - 1)));
+    private void raiseRanges(int y, List<Range> ranges) {
+        ranges.forEach(range -> range.forEach(x -> matrix.swap(x, y, x, y - 1)));
     }
 
     private void supplyLeading(boolean multiSupply) {
