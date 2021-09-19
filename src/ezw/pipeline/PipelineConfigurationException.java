@@ -19,12 +19,13 @@ public class PipelineConfigurationException extends RuntimeException {
     }
 
     private static String describeWarnings(Set<PipelineWarning> pipelineWarnings) {
-        String a = pipelineWarnings.size() > 1 ? "" : " a";
-        String s = pipelineWarnings.size() > 1 ? "s" : "";
-        String and = pipelineWarnings.size() > 1 ? "and/" : "";
-        String n = pipelineWarnings.size() > 1 ? System.lineSeparator() : " ";
-        String l = pipelineWarnings.size() > 1 ? n + "- " : n;
-        String these = pipelineWarnings.size() > 1 ? "these" : "this";
+        boolean multiple = pipelineWarnings.size() > 1;
+        String a = multiple ? "" : " a";
+        String s = multiple ? "s" : "";
+        String and = multiple ? "and/" : "";
+        String n = multiple ? System.lineSeparator() : " ";
+        String l = multiple ? n + "- " : n;
+        String these = multiple ? "these" : "this";
         return String.format("Got%s pipeline warning%s:%s%s%sFix the building logic %sor pass %s warning%s as allowed.",
                 a, s, l, pipelineWarnings.stream().map(PipelineWarning::getDescription).collect(Collectors.joining(l)),
                 n, and, these, s);
