@@ -9,25 +9,35 @@ import java.util.stream.Collectors;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
+    private final SupplyPipe<?> supplyPipe;
     private final Matrix<Object> matrix = new Matrix<>();
     private final Set<PipelineWarning> warnings = new LinkedHashSet<>(1);
     private final Map<Pipe<?>, List<OutputWorker<?>>> outputSuppliers = new HashMap<>();
     private final Map<Pipe<?>, List<InputWorker<?>>> inputConsumers = new HashMap<>();
+    private Set<Fork<?>> forks;
     private Set<Join<?>> joins;
 
     PipelineChart(List<PipelineWorker> pipelineWorkers, SupplyPipe<?> supplyPipe) {
         this.pipelineWorkers = pipelineWorkers;
+        this.supplyPipe = supplyPipe;
         classifyComponents();
         var suppliers = outputSuppliers.get(supplyPipe);
-        if (suppliers != null)
+        int suppliersCount = suppliers != null ? suppliers.size() : 0;
+        if (suppliersCount > 0)
             matrix.addColumn(suppliers.toArray());
         matrix.addColumn(supplyPipe);
         next();
-        pack();
-        rearrange();
-        joinInputsTrailing();
-        if (!pipelineWorkers.stream().allMatch(matrix::contains))
-            warnings.add(PipelineWarning.DISCOVERY);
+        if (!matrix.isEmpty()) {
+            pack();
+            rearrangeJoinColumns();
+            centerMainRow();
+            if (suppliersCount != 1)
+                supplyLeading(suppliersCount > 1);
+            forkOutputsLeading();
+            joinInputsTrailing();
+            if (!pipelineWorkers.stream().allMatch(matrix::contains))
+                warnings.add(PipelineWarning.DISCOVERY);
+        }
     }
 
     private void classifyComponents() {
@@ -55,6 +65,7 @@ class PipelineChart {
                 return workers;
             }
         }));
+        forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
         joins = Sugar.instancesOf(pipelineWorkers, Join.class);
     }
 
@@ -122,7 +133,7 @@ class PipelineChart {
             matrix.set(index, null);
             if (o instanceof Pipe)
                 matrix.set(index, "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull).mapToInt(
-                        c -> Objects.toString(c).length()).max().orElse(3)));
+                        c -> Objects.toString(c).length()).max().orElse(3) - 1) + '+');
         }
     }
 
@@ -145,17 +156,20 @@ class PipelineChart {
             }
             if (blockStart != -1)
                 blocks.add(Matrix.Coordinates.of(blockStart, matrix.size().getX() - 1));
-            int fy = y;
-            blocks.forEach(block -> {
-                for (int x = block.getX(); x <= block.getY(); x++) {
-                    matrix.swap(x, fy, x, fy - 1);
-                }
-            });
+            raiseBlocks(y, blocks);
         }
         matrix.pack(true, false);
     }
 
-    private void rearrange() {
+    private void raiseBlocks(int y, List<Matrix.Coordinates> blocks) {
+        blocks.forEach(block -> {
+            for (int x = block.getX(); x <= block.getY(); x++) {
+                matrix.swap(x, y, x, y - 1);
+            }
+        });
+    }
+
+    private void rearrangeJoinColumns() {
         matrix.getColumns().stream().filter(column -> column.stream().filter(Objects::nonNull).map(Object::getClass)
                 .collect(Collectors.toSet()).contains(Join.class) && column.contains(null)).forEach(column -> {
             List<Integer> nullIndexes = new ArrayList<>();
@@ -171,17 +185,32 @@ class PipelineChart {
                     matrix.swapRows(y, Sugar.removeLast(nullIndexes));
             }
         });
+    }
+
+    private void centerMainRow() {
         for (int y = 0; y < (matrix.size().getY() - 1) / 2; y++) {
             matrix.swapRows(y, y + 1);
         }
     }
 
+    private void supplyLeading(boolean multiSupply) {
+        matrix.set(matrix.indexOf(supplyPipe), supplyPipe.toString().replace("-<", multiSupply ? "*<" : "o-<"));
+    }
+
+    private void forkOutputsLeading() {
+        forks.stream().flatMap(fork -> Arrays.stream(fork.getOutputs())).forEach(pipe ->
+                matrix.set(matrix.indexOf(pipe), pipe.toString().replace("-<", "+<")));
+    }
+
     private void joinInputsTrailing() {
         joins.stream().flatMap(join -> Arrays.stream(join.getInputs())).forEach(pipe -> {
             var index = matrix.indexOf(pipe);
-            String string = pipe.toString();
-            matrix.set(index, string + "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull)
-                    .mapToInt(c -> Objects.toString(c).length()).max().orElse(string.length()) - string.length()));
+            if (index != null) {
+                StringBuilder sb = new StringBuilder(pipe.toString());
+                sb.append("-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull)
+                        .mapToInt(c -> Objects.toString(c).length()).max().orElse(sb.length()) - sb.length()));
+                matrix.set(index, sb.replace(sb.length() - 1, sb.length(), "+"));
+            }
         });
     }
 
