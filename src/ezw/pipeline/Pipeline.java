@@ -270,7 +270,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Builds the pipeline.
-         * @param allowedWarnings Optional allowed pipeline warnings.
+         * @param allowedWarnings Optional allowed pipeline warnings. Use with caution.
          * @return The pipeline.
          * @throws PipelineConfigurationException If got pipeline warnings not listed in <code>allowedWarnings</code>.
          */

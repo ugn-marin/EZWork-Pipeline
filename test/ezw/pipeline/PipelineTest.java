@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -672,6 +673,17 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc.replace("-", ""), accumulator.getValue());
+    }
+
+    @Test
+    void stream_parallel_accumulator1() throws Exception {
+        var supplyPipe = new SupplyPipe<Character>(smallCapacity);
+        var supplier = Pipelines.supplier(supplyPipe, five.chars().mapToObj(c -> (char) c).parallel());
+        var accumulator = new CharAccumulator(supplyPipe, 1);
+        var pipeline = Pipelines.direct(supplier, accumulator);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(five, accumulator.getValue());
     }
 
     @Test
