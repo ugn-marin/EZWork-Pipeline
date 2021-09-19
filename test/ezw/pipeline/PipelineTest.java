@@ -759,8 +759,23 @@ public class PipelineTest {
     @Test
     void conditional_direct_two_suppliers() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c == '-');
-        var supplier1 = new CharSupplier(abc, supplyPipe, 1);
-        var supplier2 = new CharSupplier(abc, supplyPipe, 1);
+        var allDoneCountdown = new CountDownLatch(2);
+        var supplier1 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void close() throws Exception {
+                allDoneCountdown.countDown();
+                allDoneCountdown.await();
+                super.close();
+            }
+        };
+        var supplier2 = new CharSupplier(abc, supplyPipe, 1) {
+            @Override
+            protected void close() throws Exception {
+                allDoneCountdown.countDown();
+                allDoneCountdown.await();
+                super.close();
+            }
+        };
         var accum = new CharAccumulator(supplyPipe, 1);
         var pipeline = Pipeline.from(supplier1, supplier2).into(accum).build(PipelineWarning.MULTIPLE_INPUTS);
         System.out.println(pipeline);
