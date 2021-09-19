@@ -5,7 +5,6 @@ import ezw.util.Matrix;
 import ezw.util.Sugar;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
@@ -29,8 +28,6 @@ class PipelineChart {
         next();
         if (!matrix.isEmpty()) {
             pack();
-            rearrangeJoinColumns();
-            centerMainRow();
             if (suppliersCount != 1)
                 supplyLeading(suppliersCount > 1);
             forkOutputsLeading();
@@ -78,16 +75,15 @@ class PipelineChart {
             return;
         }
         var addColumn = new LazyRunnable(matrix::addColumn);
-        for (int y = 0; y < level.size(); y++) {
-            var element = level.get(y);
+        for (Object element : level) {
             if (element == null)
                 continue;
-            int fy = y;
+            int y = matrix.indexOf(element).getY();
             int nextY = y;
             if (element instanceof Pipe) {
                 var workers = inputConsumers.get(element);
                 if (workers != null) {
-                    Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(fy));
+                    Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(y));
                     addColumn.run();
                     for (var worker : workers) {
                         clearExtendedComponent(worker);
@@ -109,7 +105,7 @@ class PipelineChart {
                 }
             } else if (element instanceof Fork) {
                 var outputs = new ArrayList<>(List.of(((Fork<?>) element).getOutputs()));
-                Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(fy));
+                Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(y));
                 addColumn.run();
                 outputs.sort(Comparator.comparing(Objects::toString));
                 for (var output : outputs) {
@@ -141,56 +137,28 @@ class PipelineChart {
         if (matrix.isEmpty())
             return;
         for (int y = 2; y < matrix.size().getY(); y++) {
-            List<Matrix.Coordinates> blocks = new ArrayList<>();
+            List<Matrix.Block> blocks = new ArrayList<>();
             int blockStart = -1;
             for (int x = 1; x < matrix.size().getX(); x++) {
                 if (blockStart == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
                         matrix.get(x, y - 1) == null) {
                     blockStart = x;
                 } else if (blockStart != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    blocks.add(Matrix.Coordinates.of(blockStart, x));
+                    blocks.add(Matrix.Block.of(blockStart, y, x, y));
                     blockStart = -1;
                 } else if (blockStart != -1 && matrix.get(x, y - 1) != null) {
                     blockStart = -1;
                 }
             }
             if (blockStart != -1)
-                blocks.add(Matrix.Coordinates.of(blockStart, matrix.size().getX() - 1));
-            raiseBlocks(y, blocks);
+                blocks.add(Matrix.Block.of(blockStart, y, matrix.size().getX() - 1, y));
+            raiseBlocks(blocks);
         }
         matrix.pack(true, false);
     }
 
-    private void raiseBlocks(int y, List<Matrix.Coordinates> blocks) {
-        blocks.forEach(block -> {
-            for (int x = block.getX(); x <= block.getY(); x++) {
-                matrix.swap(x, y, x, y - 1);
-            }
-        });
-    }
-
-    private void rearrangeJoinColumns() {
-        matrix.getColumns().stream().filter(column -> column.stream().filter(Objects::nonNull).map(Object::getClass)
-                .collect(Collectors.toSet()).contains(Join.class) && column.contains(null)).forEach(column -> {
-            List<Integer> nullIndexes = new ArrayList<>();
-            for (int y = column.size() - 1; y >= 0; y--) {
-                if (column.get(y) == null)
-                    nullIndexes.add(y);
-            }
-            for (int y = 0; y < column.size(); y++) {
-                if (nullIndexes.isEmpty())
-                    break;
-                var o = column.get(y);
-                if (o != null && !(o instanceof Join))
-                    matrix.swapRows(y, Sugar.removeLast(nullIndexes));
-            }
-        });
-    }
-
-    private void centerMainRow() {
-        for (int y = 0; y < (matrix.size().getY() - 1) / 2; y++) {
-            matrix.swapRows(y, y + 1);
-        }
+    private void raiseBlocks(List<Matrix.Block> blocks) {
+        blocks.forEach(block -> block.forEach(index -> matrix.swap(index.getX(), index.getY(), index.getX(), index.getY() - 1)));
     }
 
     private void supplyLeading(boolean multiSupply) {

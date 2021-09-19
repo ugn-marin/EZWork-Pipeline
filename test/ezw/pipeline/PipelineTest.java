@@ -4,11 +4,11 @@ import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
 import ezw.util.Sugar;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,8 +31,13 @@ public class PipelineTest {
     private static final int largeCapacity = 1000;
     private static final Random random = new Random();
 
+    private AtomicInteger actionsRun;
+    private AtomicInteger consumersRun;
+
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
+        actionsRun = new AtomicInteger();
+        consumersRun = new AtomicInteger();
         System.out.println(testInfo.getDisplayName());
     }
 
@@ -1057,5 +1062,60 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
         assertNotEquals(full, joinedAccum.getValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void tree() throws InterruptedException {
+        int root = 4;
+        var supplyPipe = new SupplyPipe<Character>(root);
+        var builder = Pipeline.from(supplyPipe);
+        Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () -> new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
+        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity())).toArray(Pipe[]::new);
+        PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
+        for (int i = 0; i < actions.length; i++) {
+            actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
+        }
+        PipeConsumer<Character>[] consumers = tree(builder.fork(supplyPipe, subPipesIn).through(actions), subPipesOut).toArray(PipeConsumer[]::new);
+        var pipeline = builder.into(consumers).build();
+        validate(pipeline);
+        Concurrent.calculate(pipeline);
+        int times = 1;
+        Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
+        pipeline.setEndOfInput();
+        pipeline.await();
+        int actionsCount = 0;
+        for (int i = 2; i <= root; i++) {
+            int level = i;
+            for (int j = i + 1; j <= root; j++) {
+                level *= j;
+            }
+            actionsCount += level;
+        }
+        int consumersCount = 2;
+        for (int i = 3; i <= root; i++) {
+            consumersCount *= i;
+        }
+        Assertions.assertEquals(actionsCount * times, actionsRun.get());
+        Assertions.assertEquals(consumersCount * times, consumersRun.get());
+    }
+
+    @SuppressWarnings("unchecked")
+    <T> List<PipeConsumer<T>> tree(Pipeline.Builder<T> builder, Pipe<T>... pipes) {
+        List<PipeConsumer<T>> consumers = new ArrayList<>(pipes.length * (pipes.length - 1) / 2);
+        for (var pipe : pipes) {
+            if (pipes.length == 2) {
+                consumers.add(Pipelines.consumer(pipe, t -> consumersRun.incrementAndGet()));
+            } else {
+                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new Pipe<T>(pipes.length - 2)).toArray(Pipe[]::new);
+                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<T>(p.getBaseCapacity())).toArray(Pipe[]::new);
+                PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
+                for (int i = 0; i < actions.length; i++) {
+                    actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
+                }
+                consumers.addAll(tree(builder.fork(pipe, subPipesIn).through(actions), subPipesOut));
+            }
+        }
+        return consumers;
     }
 }
