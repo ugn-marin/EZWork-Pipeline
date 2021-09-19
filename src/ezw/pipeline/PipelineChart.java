@@ -165,14 +165,14 @@ class PipelineChart {
                         matrix.get(x, y - 1) == null) {
                     start = x;
                 } else if (start != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    ranges.add(Range.of(start, x));
+                    ranges.add(Range.of(start, x + 1));
                     start = -1;
                 } else if (start != -1 && matrix.get(x, y - 1) != null) {
                     start = -1;
                 }
             }
             if (start != -1)
-                ranges.add(Range.of(start, matrix.size().getX() - 1));
+                ranges.add(Range.of(start, matrix.size().getX()));
             raiseRanges(y, ranges);
         }
         matrix.pack(true, false);
