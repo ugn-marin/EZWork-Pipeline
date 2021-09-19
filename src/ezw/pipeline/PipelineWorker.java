@@ -17,6 +17,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
+    private final Latch latch = new Latch();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
@@ -56,10 +57,19 @@ public abstract class PipelineWorker implements UnsafeRunnable {
                 try {
                     internalClose();
                 } finally {
+                    latch.release();
                     Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
                 }
             }
         }
+    }
+
+    /**
+     * Causes the current thread to wait until all internal work is done, or an exception is thrown.
+     * @throws InterruptedException If interrupted.
+     */
+    public void await() throws InterruptedException {
+        latch.await();
     }
 
     /**
