@@ -133,7 +133,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
             var supplyPipes = Arrays.stream(Sugar.requireFull(pipeSuppliers)).map(PipeSupplier::getOutput)
                     .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
-                throw new IllegalArgumentException("The pipeline suppliers must feed exactly 1 supply pipe.");
+                throw new PipelineConfigurationException("The pipeline suppliers must feed exactly 1 supply pipe.");
             supplyPipe = (SupplyPipe<S>) supplyPipes.stream().findFirst().get();
             attach(pipeSuppliers);
         }
@@ -270,7 +270,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         /**
          * Builds the pipeline.
-         * @param allowedWarnings Optional allowed pipeline warnings.
+         * @param allowedWarnings Optional allowed pipeline warnings. Use with caution.
          * @return The pipeline.
          * @throws PipelineConfigurationException If got pipeline warnings not listed in <code>allowedWarnings</code>.
          */

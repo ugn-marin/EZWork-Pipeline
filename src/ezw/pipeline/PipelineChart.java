@@ -2,32 +2,40 @@ package ezw.pipeline;
 
 import ezw.concurrent.LazyRunnable;
 import ezw.util.Matrix;
+import ezw.util.Range;
 import ezw.util.Sugar;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
+    private final SupplyPipe<?> supplyPipe;
     private final Matrix<Object> matrix = new Matrix<>();
     private final Set<PipelineWarning> warnings = new LinkedHashSet<>(1);
     private final Map<Pipe<?>, List<OutputWorker<?>>> outputSuppliers = new HashMap<>();
     private final Map<Pipe<?>, List<InputWorker<?>>> inputConsumers = new HashMap<>();
+    private Set<Fork<?>> forks;
     private Set<Join<?>> joins;
 
     PipelineChart(List<PipelineWorker> pipelineWorkers, SupplyPipe<?> supplyPipe) {
         this.pipelineWorkers = pipelineWorkers;
+        this.supplyPipe = supplyPipe;
         classifyComponents();
         var suppliers = outputSuppliers.get(supplyPipe);
-        if (suppliers != null)
+        int suppliersCount = suppliers != null ? suppliers.size() : 0;
+        if (suppliersCount > 0)
             matrix.addColumn(suppliers.toArray());
         matrix.addColumn(supplyPipe);
         next();
-        pack();
-        rearrange();
-        joinInputsTrailing();
-        if (!pipelineWorkers.stream().allMatch(matrix::contains))
-            warnings.add(PipelineWarning.DISCOVERY);
+        if (!matrix.isEmpty()) {
+            pack();
+            if (suppliersCount != 1)
+                supplyLeading(suppliersCount > 1);
+            forkOutputsLeading();
+            joinInputsTrailing();
+            if (!pipelineWorkers.stream().allMatch(matrix::contains))
+                warnings.add(PipelineWarning.DISCOVERY);
+        }
     }
 
     private void classifyComponents() {
@@ -35,6 +43,9 @@ class PipelineChart {
         outputWorkers.forEach(ow -> outputSuppliers.compute(ow.getOutput(), (pipe, workers) -> {
             if (workers == null) {
                 return new ArrayList<>(List.of(ow));
+            } else if (!(pipe instanceof SupplyGate)) {
+                throw new PipelineConfigurationException("Multiple workers push into the same pipe using different " +
+                        "index scopes.");
             } else {
                 workers.add(ow);
                 workers.sort(Comparator.comparing(Objects::toString));
@@ -52,65 +63,85 @@ class PipelineChart {
                 return workers;
             }
         }));
+        forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
         joins = Sugar.instancesOf(pipelineWorkers, Join.class);
     }
 
     private void next() {
         var level = matrix.getLastColumn();
-        int nextX = matrix.size().getX();
-        if (nextX > pipelineWorkers.size() * 2) {
+        int x = matrix.size().getX();
+        if (x > pipelineWorkers.size() * 2) {
             warnings.add(PipelineWarning.CYCLE);
             matrix.clear();
             return;
         }
         var addColumn = new LazyRunnable(matrix::addColumn);
-        for (int y = 0; y < level.size(); y++) {
-            var element = level.get(y);
+        for (Object element : level) {
             if (element == null)
                 continue;
-            int fy = y;
-            int nextY = y;
-            if (element instanceof Pipe) {
-                var workers = inputConsumers.get(element);
-                if (workers != null) {
-                    Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(fy));
-                    addColumn.run();
-                    for (var worker : workers) {
-                        clearExtendedComponent(worker);
-                        matrix.set(nextX, nextY++, worker);
-                    }
-                } else {
-                    var join = joins.stream().filter(j -> List.of(j.getInputs()).contains(element)).findFirst();
-                    if (join.isEmpty())
-                        continue;
-                    var indexOfJoin = matrix.indexOf(join.get());
-                    if (indexOfJoin != null) {
-                        if (indexOfJoin.getX() != nextX)
-                            matrix.set(indexOfJoin, "---");
-                        else
-                            continue;
-                    }
-                    addColumn.run();
-                    matrix.set(nextX, nextY, join.get());
-                }
-            } else if (element instanceof Fork) {
-                var outputs = new ArrayList<>(List.of(((Fork<?>) element).getOutputs()));
-                Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(fy));
-                addColumn.run();
-                outputs.sort(Comparator.comparing(Objects::toString));
-                for (var output : outputs) {
-                    clearExtendedComponent(output);
-                    matrix.set(nextX, nextY++, output);
-                }
-            } else if (element instanceof OutputWorker) {
-                var output = ((OutputWorker<?>) element).getOutput();
-                addColumn.run();
-                clearExtendedComponent(output);
-                matrix.set(nextX, nextY, output);
-            }
+            int y = matrix.indexOf(element).getY();
+            if (element instanceof Pipe)
+                addPipeOutputs(x, y, (Pipe<?>) element, addColumn);
+            else if (element instanceof Fork)
+                addForkOutputs(x, y, (Fork<?>) element, addColumn);
+            else if (element instanceof OutputWorker)
+                addOutputPipe(x, y, (OutputWorker<?>) element, addColumn);
         }
         if (addColumn.isCalculated())
             next();
+    }
+
+    private void addPipeOutputs(int x, int y, Pipe<?> pipe, Runnable addColumn) {
+        var workers = inputConsumers.get(pipe);
+        if (workers != null) {
+            addPipeWorkers(x, y, workers, addColumn);
+        } else {
+            addPipeJoin(x, y, pipe, addColumn);
+        }
+    }
+
+    private void addPipeWorkers(int x, int y, List<InputWorker<?>> workers, Runnable addColumn) {
+        Sugar.repeat(workers.size() - 1, () -> matrix.addRowAfter(y));
+        addColumn.run();
+        int nextY = y;
+        for (var worker : workers) {
+            clearExtendedComponent(worker);
+            matrix.set(x, nextY++, worker);
+        }
+    }
+
+    private void addPipeJoin(int x, int y, Pipe<?> pipe, Runnable addColumn) {
+        var join = joins.stream().filter(j -> List.of(j.getInputs()).contains(pipe)).findFirst();
+        if (join.isEmpty())
+            return;
+        var indexOfJoin = matrix.indexOf(join.get());
+        if (indexOfJoin != null) {
+            if (indexOfJoin.getX() != x)
+                matrix.set(indexOfJoin, "---");
+            else
+                return;
+        }
+        addColumn.run();
+        matrix.set(x, y, join.get());
+    }
+
+    private void addForkOutputs(int x, int y, Fork<?> fork, Runnable addColumn) {
+        var outputs = new ArrayList<>(List.of(fork.getOutputs()));
+        Sugar.repeat(outputs.size() - 1, () -> matrix.addRowAfter(y));
+        addColumn.run();
+        outputs.sort(Comparator.comparing(Objects::toString));
+        int nextY = y;
+        for (var output : outputs) {
+            clearExtendedComponent(output);
+            matrix.set(x, nextY++, output);
+        }
+    }
+
+    private void addOutputPipe(int x, int y, OutputWorker<?> worker, Runnable addColumn) {
+        var output = worker.getOutput();
+        addColumn.run();
+        clearExtendedComponent(output);
+        matrix.set(x, y, output);
     }
 
     private void clearExtendedComponent(Object o) {
@@ -119,7 +150,7 @@ class PipelineChart {
             matrix.set(index, null);
             if (o instanceof Pipe)
                 matrix.set(index, "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull).mapToInt(
-                        c -> Objects.toString(c).length()).max().orElse(3)));
+                        c -> Objects.toString(c).length()).max().orElse(3) - 1) + '+');
         }
     }
 
@@ -127,58 +158,48 @@ class PipelineChart {
         if (matrix.isEmpty())
             return;
         for (int y = 2; y < matrix.size().getY(); y++) {
-            List<Matrix.Coordinates> blocks = new ArrayList<>();
-            int blockStart = -1;
+            List<Range> ranges = new ArrayList<>();
+            int start = -1;
             for (int x = 1; x < matrix.size().getX(); x++) {
-                if (blockStart == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
+                if (start == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
                         matrix.get(x, y - 1) == null) {
-                    blockStart = x;
-                } else if (blockStart != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    blocks.add(Matrix.Coordinates.of(blockStart, x));
-                    blockStart = -1;
-                } else if (blockStart != -1 && matrix.get(x, y - 1) != null) {
-                    blockStart = -1;
+                    start = x;
+                } else if (start != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
+                    ranges.add(Range.of(start, x + 1));
+                    start = -1;
+                } else if (start != -1 && matrix.get(x, y - 1) != null) {
+                    start = -1;
                 }
             }
-            if (blockStart != -1)
-                blocks.add(Matrix.Coordinates.of(blockStart, matrix.size().getX() - 1));
-            int fy = y;
-            blocks.forEach(block -> {
-                for (int x = block.getX(); x <= block.getY(); x++) {
-                    matrix.swap(x, fy, x, fy - 1);
-                }
-            });
+            if (start != -1)
+                ranges.add(Range.of(start, matrix.size().getX()));
+            raiseRanges(y, ranges);
         }
         matrix.pack(true, false);
     }
 
-    private void rearrange() {
-        matrix.getColumns().stream().filter(column -> column.stream().filter(Objects::nonNull).map(Object::getClass)
-                .collect(Collectors.toSet()).contains(Join.class) && column.contains(null)).forEach(column -> {
-            List<Integer> nullIndexes = new ArrayList<>();
-            for (int y = column.size() - 1; y >= 0; y--) {
-                if (column.get(y) == null)
-                    nullIndexes.add(y);
-            }
-            for (int y = 0; y < column.size(); y++) {
-                if (nullIndexes.isEmpty())
-                    break;
-                var o = column.get(y);
-                if (o != null && !(o instanceof Join))
-                    matrix.swapRows(y, Sugar.removeLast(nullIndexes));
-            }
-        });
-        for (int y = 0; y < (matrix.size().getY() - 1) / 2; y++) {
-            matrix.swapRows(y, y + 1);
-        }
+    private void raiseRanges(int y, List<Range> ranges) {
+        ranges.forEach(range -> range.forEach(x -> matrix.swap(x, y, x, y - 1)));
+    }
+
+    private void supplyLeading(boolean multiSupply) {
+        matrix.set(matrix.indexOf(supplyPipe), supplyPipe.toString().replace("-<", multiSupply ? "*<" : "o-<"));
+    }
+
+    private void forkOutputsLeading() {
+        forks.stream().flatMap(fork -> Arrays.stream(fork.getOutputs())).forEach(pipe ->
+                matrix.set(matrix.indexOf(pipe), pipe.toString().replace("-<", "+<")));
     }
 
     private void joinInputsTrailing() {
         joins.stream().flatMap(join -> Arrays.stream(join.getInputs())).forEach(pipe -> {
             var index = matrix.indexOf(pipe);
-            String string = pipe.toString();
-            matrix.set(index, string + "-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull)
-                    .mapToInt(c -> Objects.toString(c).length()).max().orElse(string.length()) - string.length()));
+            if (index != null) {
+                StringBuilder sb = new StringBuilder(pipe.toString());
+                sb.append("-".repeat(matrix.getColumn(index.getX()).stream().filter(Objects::nonNull)
+                        .mapToInt(c -> Objects.toString(c).length()).max().orElse(sb.length()) - sb.length()));
+                matrix.set(index, sb.replace(sb.length() - 1, sb.length(), "+"));
+            }
         });
     }
 

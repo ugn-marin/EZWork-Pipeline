@@ -17,6 +17,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final AtomicBoolean executed = new AtomicBoolean();
+    private final Latch latch = new Latch();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
@@ -50,11 +51,25 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         } finally {
             try {
                 close();
+            } catch (Throwable t) {
+                setThrowable(t);
             } finally {
-                internalClose();
-                Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+                try {
+                    internalClose();
+                } finally {
+                    latch.release();
+                    Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+                }
             }
         }
+    }
+
+    /**
+     * Causes the current thread to wait until all internal work is done, or an exception is thrown.
+     * @throws InterruptedException If interrupted.
+     */
+    public void await() throws InterruptedException {
+        latch.await();
     }
 
     /**
@@ -135,8 +150,10 @@ public abstract class PipelineWorker implements UnsafeRunnable {
 
     /**
      * Called automatically when the worker is done executing or failed.
+     * @throws Exception A possible exception from the closing logic. Will be thrown by the pipeline if and only if it
+     * isn't already in the process of throwing a different exception.
      */
-    protected void close() {}
+    protected void close() throws Exception {}
 
     void internalClose() {}
 
@@ -158,7 +175,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public String toString() {
         String string = getSimpleName();
-        if (getConcurrency() > 1)
+        if (getConcurrency() != 1)
             string += String.format("[%d]", getConcurrency());
         return string;
     }

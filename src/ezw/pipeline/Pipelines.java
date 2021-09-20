@@ -43,6 +43,36 @@ public abstract class Pipelines {
     }
 
     /**
+     * Constructs a pipeline from a simple supplier of the non-null elements from the stream, into the consumer.
+     * @param stream The stream.
+     * @param pipeConsumer The consumer.
+     * @param <I> The items type.
+     * @return The pipeline.
+     */
+    public static <I> Pipeline<I> direct(Stream<I> stream, PipeConsumer<I> pipeConsumer) {
+        if (!(Objects.requireNonNull(pipeConsumer, "Consumer is null.").getInput() instanceof SupplyPipe))
+            throw new PipelineConfigurationException("The direct pipeline consumer input pipe must be a supply pipe.");
+        return direct(supplier((SupplyPipe<I>) pipeConsumer.getInput(), stream), pipeConsumer);
+    }
+
+    /**
+     * Constructs a pipeline from a simple supplier of the non-null elements from the stream, into a simple
+     * multi-threaded consumer. Similar to (plus the pipeline functionality of cancellation, concurrency control etc.):
+     * <pre>
+     * stream.filter(Objects::nonNull).parallel().forEach(accept);
+     * </pre>
+     * @param stream The stream.
+     * @param concurrency The maximum parallel items consuming to allow.
+     * @param accept The consumer accept implementation.
+     * @param <I> The items type.
+     * @return The pipeline.
+     */
+    public static <I> Pipeline<I> direct(Stream<I> stream, int concurrency, Consumer<I> accept) {
+        SupplyPipe<I> supplyPipe = new SupplyPipe<>(concurrency);
+        return direct(supplier(supplyPipe, stream), consumer(supplyPipe, concurrency, accept));
+    }
+
+    /**
      * Constructs a star pipeline forking from the supplier into all the consumers.
      * @param pipeSupplier The supplier.
      * @param pipeConsumers The pipe consumers.

@@ -21,6 +21,6 @@ abstract class PipeConnector extends PipelineWorker {
 
     @Override
     public String toString() {
-        return super.toString().toLowerCase();
+        return getSimpleName().toLowerCase();
     }
 }
