@@ -31,11 +31,13 @@ public class PipelineTest {
     private static final int largeCapacity = 1000;
     private static final Random random = new Random();
 
+    private AtomicInteger functionsRun;
     private AtomicInteger actionsRun;
     private AtomicInteger consumersRun;
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
+        functionsRun = new AtomicInteger();
         actionsRun = new AtomicInteger();
         consumersRun = new AtomicInteger();
         System.out.println(testInfo.getDisplayName());
@@ -1107,22 +1109,12 @@ public class PipelineTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void tree() throws InterruptedException {
         int root = 4;
-        var supplyPipe = new SupplyPipe<Character>(root);
-        var builder = Pipeline.from(supplyPipe);
-        Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () -> new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
-        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity())).toArray(Pipe[]::new);
-        PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
-        for (int i = 0; i < actions.length; i++) {
-            actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
-        }
-        PipeConsumer<Character>[] consumers = tree(builder.fork(supplyPipe, subPipesIn).through(actions), subPipesOut).toArray(PipeConsumer[]::new);
-        var pipeline = builder.into(consumers).build();
+        var pipeline = tree(root);
         validate(pipeline);
         Concurrent.calculate(pipeline);
-        int times = 1;
+        int times = 3;
         Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
         pipeline.setEndOfInput();
         pipeline.await();
@@ -1143,6 +1135,20 @@ public class PipelineTest {
     }
 
     @SuppressWarnings("unchecked")
+    Pipeline<Character> tree(int root) {
+        var supplyPipe = new SupplyPipe<Character>(root);
+        var builder = Pipeline.from(supplyPipe);
+        Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () -> new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
+        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity())).toArray(Pipe[]::new);
+        PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
+        for (int i = 0; i < actions.length; i++) {
+            actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
+        }
+        PipeConsumer<Character>[] consumers = tree(builder.fork(supplyPipe, subPipesIn).through(actions), subPipesOut).toArray(PipeConsumer[]::new);
+        return builder.into(consumers).build();
+    }
+
+    @SuppressWarnings("unchecked")
     <T> List<PipeConsumer<T>> tree(Pipeline.Builder<T> builder, Pipe<T>... pipes) {
         List<PipeConsumer<T>> consumers = new ArrayList<>(pipes.length * (pipes.length - 1) / 2);
         for (var pipe : pipes) {
@@ -1159,5 +1165,92 @@ public class PipelineTest {
             }
         }
         return consumers;
+    }
+
+    @Test
+    void treeJoin() throws InterruptedException {
+        int root = 4;
+        var pipeline = treeJoin(root);
+        validate(pipeline);
+        Concurrent.calculate(pipeline);
+        int times = 3;
+        Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
+        pipeline.setEndOfInput();
+        pipeline.await();
+        int actionsCount = 0;
+        for (int i = 2; i <= root; i++) {
+            int level = i;
+            for (int j = i + 1; j <= root; j++) {
+                level *= j;
+            }
+            actionsCount += level;
+        }
+        int functionsCount = 2;
+        for (int i = 3; i <= root; i++) {
+            functionsCount *= i;
+        }
+        actionsCount = actionsCount * 2 - functionsCount - functionsCount / 2 + 1;
+        Assertions.assertEquals(actionsCount * times, actionsRun.get());
+        Assertions.assertEquals(functionsCount * times, functionsRun.get());
+        Assertions.assertEquals(times, consumersRun.get());
+    }
+
+    @SuppressWarnings("unchecked")
+    Pipeline<Character> treeJoin(int root) {
+        var supplyPipe = new SupplyPipe<Character>(root);
+        var builder = Pipeline.from(supplyPipe);
+        Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () -> new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
+        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity())).toArray(Pipe[]::new);
+        PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
+        for (int i = 0; i < actions.length; i++) {
+            actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
+        }
+        PipeFunction<Character, Integer>[] functions = treeJoin1(builder.fork(supplyPipe, subPipesIn).through(actions), subPipesOut).toArray(PipeFunction[]::new);
+        builder.through(functions);
+        List<Pipe<Integer>> joined = new ArrayList<>(functions.length / 2);
+        for (int i = 0; i < functions.length; i += 2) {
+            Pipe<Integer> output = new Pipe<>(2);
+            builder.join(output, functions[i].getOutput(), functions[i + 1].getOutput());
+            joined.add(output);
+        }
+        return builder.into(treeJoin2(builder, joined)).build();
+    }
+
+    @SuppressWarnings("unchecked")
+    <T> List<PipeFunction<T, Integer>> treeJoin1(Pipeline.Builder<T> builder, Pipe<T>... pipes) {
+        List<PipeFunction<T, Integer>> functions = new ArrayList<>(pipes.length * (pipes.length - 1) / 2);
+        for (var pipe : pipes) {
+            if (pipes.length == 2) {
+                functions.add(Pipelines.function(pipe, new Pipe<>(1), t -> functionsRun.incrementAndGet()));
+            } else {
+                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new Pipe<T>(pipes.length - 2)).toArray(Pipe[]::new);
+                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<T>(p.getBaseCapacity())).toArray(Pipe[]::new);
+                PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
+                for (int i = 0; i < actions.length; i++) {
+                    actions[i] = Pipelines.action(subPipesIn[i], subPipesOut[i], actions.length - 1, t -> actionsRun.incrementAndGet());
+                }
+                functions.addAll(treeJoin1(builder.fork(pipe, subPipesIn).through(actions), subPipesOut));
+            }
+        }
+        return functions;
+    }
+
+    @SuppressWarnings("unchecked")
+    <T> PipeConsumer<Integer> treeJoin2(Pipeline.Builder<T> builder, List<Pipe<Integer>> joins) {
+        if (joins.size() == 1)
+            return Pipelines.consumer(Sugar.first(joins), i -> consumersRun.incrementAndGet());
+        int group = Sugar.first(joins).getBaseCapacity() + 1;
+        List<Pipe<Integer>> joined = new ArrayList<>(joins.size() / group);
+        for (int i = 0; i < joins.size(); i += group) {
+            Pipe<Integer>[] inputs = new Pipe[group];
+            for (int j = 0; j < group; j++) {
+                inputs[j] = joins.get(i + j);
+            }
+            Pipe<Integer> output = new Pipe<>(group);
+            PipeAction<Integer> action = Pipelines.action(output, new Pipe<>(group), n -> actionsRun.incrementAndGet());
+            builder.join(output, inputs).through(action);
+            joined.add(action.getOutput());
+        }
+        return treeJoin2(builder, joined);
     }
 }
