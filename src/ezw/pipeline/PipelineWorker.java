@@ -175,7 +175,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public String toString() {
         String string = getSimpleName();
-        if (getConcurrency() > 1)
+        if (getConcurrency() != 1)
             string += String.format("[%d]", getConcurrency());
         return string;
     }
