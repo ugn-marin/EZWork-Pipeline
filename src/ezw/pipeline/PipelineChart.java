@@ -158,28 +158,26 @@ class PipelineChart {
         if (matrix.isEmpty())
             return;
         for (int y = 2; y < matrix.size().getY(); y++) {
-            List<Range> ranges = new ArrayList<>();
             int start = -1;
             for (int x = 1; x < matrix.size().getX(); x++) {
                 if (start == -1 && matrix.get(x, y) != null && matrix.get(x - 1, y) == null &&
                         matrix.get(x, y - 1) == null) {
                     start = x;
                 } else if (start != -1 && matrix.get(x, y) == null && matrix.get(x, y - 1) == null) {
-                    ranges.add(Range.of(start, x + 1));
+                    raiseRange(Range.of(start, x + 1), y);
                     start = -1;
                 } else if (start != -1 && matrix.get(x, y - 1) != null) {
                     start = -1;
                 }
             }
             if (start != -1)
-                ranges.add(Range.of(start, matrix.size().getX()));
-            raiseRanges(y, ranges);
+                raiseRange(Range.of(start, matrix.size().getX()), y);
         }
         matrix.pack(true, false);
     }
 
-    private void raiseRanges(int y, List<Range> ranges) {
-        ranges.forEach(range -> range.forEach(x -> matrix.swap(x, y, x, y - 1)));
+    private void raiseRange(Range range, int y) {
+        range.forEach(x -> matrix.swap(x, y, x, y - 1));
     }
 
     private void supplyLeading(boolean multiSupply) {
