@@ -820,8 +820,50 @@ public class PipelineTest {
         var pipeline = Pipelines.direct(supplier, accum);
         validate(pipeline);
         pipeline.run();
-        assertEquals("The avrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ0123456789.".length() + 1,
+        assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(),
                 accum.getValue().length());
+    }
+
+    @Test
+    void unique_direct_stream() throws Exception {
+        var accum = new CharAccumulator(new SupplyPipe<>(smallCapacity), 1);
+        var pipeline = Pipelines.direct(five.chars().mapToObj(c -> (char) c).distinct(), accum);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n", accum.getValue());
+    }
+
+    @Test
+    void unique_direct_stream_parallel() throws Exception {
+        var accum = new CharAccumulator(new SupplyPipe<>(smallCapacity), 3);
+        var pipeline = Pipelines.direct(five.chars().mapToObj(c -> (char) c).distinct(), accum);
+        validate(pipeline);
+        pipeline.run();
+        assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(),
+                accum.getValue().length());
+    }
+
+    @Test
+    void unique_direct_stream_parallel_counter() throws Exception {
+        var counter = new AtomicInteger();
+        var pipeline = Pipelines.direct(five.chars().mapToObj(c -> (char) c).distinct(), 5,
+                c -> counter.incrementAndGet());
+        validate(pipeline);
+        pipeline.run();
+        assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(), counter.get());
+    }
+
+    @Test
+    void push_all_accumulator1() throws Exception {
+        var supplyPipe = new SupplyPipe<Character>(smallCapacity);
+        var accum = new CharAccumulator(supplyPipe, 1);
+        var pipeline = Pipeline.from(supplyPipe).into(accum).build();
+        validate(pipeline);
+        Concurrent.calculate(pipeline);
+        pipeline.pushAll(five.chars().mapToObj(c -> (char) c));
+        pipeline.setEndOfInput();
+        pipeline.await();
+        assertEquals(five, accum.getValue());
     }
 
     @Test
