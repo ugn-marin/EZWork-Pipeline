@@ -181,7 +181,7 @@ class PipelineChart {
     }
 
     private void supplyLeading(boolean multiSupply) {
-        matrix.set(matrix.indexOf(supplyPipe), supplyPipe.toString().replace("-<", multiSupply ? "*<" : "o-<"));
+        matrix.set(matrix.indexOf(supplyPipe), supplyPipe.toString().replace("-<", multiSupply ? "*<" : "o<"));
     }
 
     private void forkOutputsLeading() {
