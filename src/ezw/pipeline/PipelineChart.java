@@ -1,9 +1,9 @@
 package ezw.pipeline;
 
+import ezw.Sugar;
 import ezw.concurrent.LazyRunnable;
-import ezw.util.Matrix;
-import ezw.util.Range;
-import ezw.util.Sugar;
+import ezw.data.Matrix;
+import ezw.data.Range;
 
 import java.util.*;
 

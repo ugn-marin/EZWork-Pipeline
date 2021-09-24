@@ -1,9 +1,9 @@
 package ezw.pipeline;
 
+import ezw.Sugar;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
-import ezw.util.Sugar;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;
@@ -157,6 +157,23 @@ public class PipelineTest {
             System.out.println(pipeline);
             pipeline.run();
             pipeline.push(1);
+            fail();
+        } catch (IllegalStateException e) {
+            System.out.println(e.getMessage());
+        }
+        // Rebuild
+        try {
+            var builder = Pipeline.from(pipe);
+            builder.into(Pipelines.consumer(pipe, x -> {}));
+            builder.into(Pipelines.consumer(pipe, x -> {}));
+            fail();
+        } catch (IllegalStateException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            var builder = Pipeline.from(pipe).into(Pipelines.consumer(pipe, x -> {}));
+            builder.build();
+            builder.build();
             fail();
         } catch (IllegalStateException e) {
             System.out.println(e.getMessage());

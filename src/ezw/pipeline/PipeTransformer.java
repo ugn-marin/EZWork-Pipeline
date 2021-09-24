@@ -1,7 +1,7 @@
 package ezw.pipeline;
 
-import ezw.util.Sugar;
-import ezw.util.function.UnsafeFunction;
+import ezw.Sugar;
+import ezw.function.UnsafeFunction;
 
 import java.util.Collection;
 import java.util.Objects;
