@@ -1,9 +1,9 @@
 package ezw.pipeline;
 
+import ezw.Sugar;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.pipeline.workers.*;
-import ezw.util.Sugar;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;

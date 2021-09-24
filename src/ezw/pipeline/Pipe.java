@@ -1,8 +1,8 @@
 package ezw.pipeline;
 
+import ezw.Sugar;
 import ezw.concurrent.InterruptedRuntimeException;
 import ezw.concurrent.Interruptible;
-import ezw.util.Sugar;
 
 import java.util.HashMap;
 import java.util.Iterator;

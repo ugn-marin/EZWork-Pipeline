@@ -1,7 +1,7 @@
 package ezw.pipeline;
 
-import ezw.concurrent.OneShot;
-import ezw.util.Sugar;
+import ezw.Sugar;
+import ezw.flow.OneShot;
 
 import java.util.*;
 import java.util.function.Predicate;

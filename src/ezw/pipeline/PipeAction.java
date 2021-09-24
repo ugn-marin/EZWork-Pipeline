@@ -1,6 +1,6 @@
 package ezw.pipeline;
 
-import ezw.util.function.UnsafeConsumer;
+import ezw.function.UnsafeConsumer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

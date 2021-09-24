@@ -1,6 +1,6 @@
 package ezw.pipeline;
 
-import ezw.util.Sugar;
+import ezw.Sugar;
 
 import java.util.Arrays;
 import java.util.Objects;

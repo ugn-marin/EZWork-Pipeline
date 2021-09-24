@@ -1,9 +1,9 @@
 package ezw.pipeline;
 
+import ezw.Sugar;
 import ezw.concurrent.*;
-import ezw.concurrent.OneShot;
-import ezw.util.Sugar;
-import ezw.util.function.UnsafeRunnable;
+import ezw.flow.OneShot;
+import ezw.function.UnsafeRunnable;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
