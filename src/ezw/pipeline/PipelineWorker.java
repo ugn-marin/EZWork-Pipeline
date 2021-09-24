@@ -1,12 +1,12 @@
 package ezw.pipeline;
 
 import ezw.concurrent.*;
+import ezw.concurrent.OneShot;
 import ezw.util.Sugar;
 import ezw.util.function.UnsafeRunnable;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -16,7 +16,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
-    private final AtomicBoolean executed = new AtomicBoolean();
+    private final OneShot oneShot = new OneShot();
     private final Latch latch = new Latch();
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
@@ -40,8 +40,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      */
     @Override
     public void run() throws Exception {
-        if (executed.getAndSet(true))
-            throw new IllegalStateException("The pipeline worker instance cannot be reused.");
+        oneShot.check("The pipeline worker instance cannot be reused.");
         try {
             work();
             if (executorService.isCalculated())

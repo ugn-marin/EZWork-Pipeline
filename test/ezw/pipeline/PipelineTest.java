@@ -161,6 +161,23 @@ public class PipelineTest {
         } catch (IllegalStateException e) {
             System.out.println(e.getMessage());
         }
+        // Rebuild
+        try {
+            var builder = Pipeline.from(pipe);
+            builder.into(Pipelines.consumer(pipe, x -> {}));
+            builder.into(Pipelines.consumer(pipe, x -> {}));
+            fail();
+        } catch (IllegalStateException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            var builder = Pipeline.from(pipe).into(Pipelines.consumer(pipe, x -> {}));
+            builder.build();
+            builder.build();
+            fail();
+        } catch (IllegalStateException e) {
+            System.out.println(e.getMessage());
+        }
         // Reuse
         try {
             var pipeline = Pipelines.direct(() -> null, x -> {});
