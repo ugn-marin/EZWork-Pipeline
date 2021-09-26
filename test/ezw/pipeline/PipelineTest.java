@@ -3,6 +3,7 @@ package ezw.pipeline;
 import ezw.Sugar;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
+import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
 
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -678,6 +680,52 @@ public class PipelineTest {
     }
 
     @Test
+    void fail_before_await() throws InterruptedException {
+        var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
+        var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, i -> {
+            if (i == 9)
+                throw new NumberFormatException();
+        })).build();
+        validate(pipeline);
+        var future = Concurrent.calculate(pipeline);
+        for (int i = 0; i < 10; i++) {
+            pipeline.push(i);
+        }
+        pipeline.setEndOfInput();
+        pipeline.await();
+        try {
+            future.get();
+            fail();
+        } catch (ExecutionException e) {
+            Assertions.assertEquals(NumberFormatException.class, e.getCause().getClass());
+        }
+    }
+
+    @Test
+    void fail_during_await() throws InterruptedException {
+        var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
+        var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, i -> {
+            if (i == 9)
+                throw new NumberFormatException();
+        })).build();
+        validate(pipeline);
+        var future = Concurrent.calculate(pipeline);
+        Concurrent.calculate(() -> {
+            for (int i = 0; i < 10; i++) {
+                pipeline.push(i);
+            }
+            pipeline.setEndOfInput();
+        });
+        pipeline.await();
+        try {
+            future.get();
+            fail();
+        } catch (ExecutionException e) {
+            Assertions.assertEquals(NumberFormatException.class, e.getCause().getClass());
+        }
+    }
+
+    @Test
     void supplier1conditional_minimum_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity, c -> c != '-');
         CharSupplier charSupplier = new CharSupplier(abc, supplyPipe, 1);
@@ -1090,6 +1138,23 @@ public class PipelineTest {
     }
 
     @Test
+    void pipe_throughput() throws ExecutionException, InterruptedException {
+        int concurrency = 8;
+        var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
+        var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, concurrency, i -> {})).build();
+        validate(pipeline);
+        Concurrent.calculate(pipeline);
+        var tasks = Sugar.fill(concurrency, () -> (UnsafeRunnable) () -> {
+            for (int i = 0; i < 100000; i++) {
+                pipeline.push(i);
+            }
+        });
+        Concurrent.parallel(tasks.stream().map(UnsafeRunnable::toRunnable).toArray(Runnable[]::new));
+        pipeline.setEndOfInput();
+        pipeline.await();
+    }
+
+    @Test
     void skip_level() throws Exception {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);
@@ -1216,7 +1281,7 @@ public class PipelineTest {
         var pipeline = treeJoin(root);
         validate(pipeline);
         Concurrent.calculate(pipeline);
-        int times = 3;
+        int times = 50;
         Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
         pipeline.setEndOfInput();
         pipeline.await();

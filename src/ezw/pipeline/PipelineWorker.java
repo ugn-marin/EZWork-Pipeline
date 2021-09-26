@@ -64,8 +64,9 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     }
 
     /**
-     * Causes the current thread to wait until all internal work is done, or an exception is thrown.
-     * @throws InterruptedException If interrupted.
+     * Causes the current thread to wait until all internal work is done, or an exception is thrown. Returns normally
+     * regardless of the result.
+     * @throws InterruptedException If current thread was interrupted.
      */
     public void await() throws InterruptedException {
         latch.await();
