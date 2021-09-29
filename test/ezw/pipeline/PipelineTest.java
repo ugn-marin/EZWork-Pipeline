@@ -358,7 +358,12 @@ public class PipelineTest {
 
     @Test
     void supplier1_large_accumulator1slow_checkPipe() throws Exception {
-        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity) {
+            @Override
+            protected String getName() {
+                return "Large";
+            }
+        };
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
@@ -625,8 +630,18 @@ public class PipelineTest {
     void supplier1_large_fork_accumulator2slow_print_fail() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        Pipe<Character> toAccum = new Pipe<>(smallCapacity);
-        Pipe<Character> toPrint = new Pipe<>(mediumCapacity);
+        Pipe<Character> toAccum = new Pipe<>(smallCapacity) {
+            @Override
+            protected String getName() {
+                return "accum";
+            }
+        };
+        Pipe<Character> toPrint = new Pipe<>(mediumCapacity) {
+            @Override
+            protected String getName() {
+                return "out";
+            }
+        };
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
             @Override
             public void accept(Character item) throws InterruptedException {

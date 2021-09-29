@@ -158,9 +158,9 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     void internalClose() {}
 
     /**
-     * Returns a simple name of the worker.
+     * Returns the name of the worker.
      */
-    protected String getSimpleName() {
+    protected String getName() {
         Class<?> clazz = getClass();
         String simpleName = clazz.getSimpleName();
         while (simpleName.isEmpty()) {
@@ -174,7 +174,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
 
     @Override
     public String toString() {
-        String string = getSimpleName();
+        String string = getName();
         if (getConcurrency() != 1)
             string += String.format("[%d]", getConcurrency());
         return string;

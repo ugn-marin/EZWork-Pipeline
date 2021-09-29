@@ -162,9 +162,16 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         return iterator;
     }
 
+    /**
+     * Returns the name of the pipe.
+     */
+    protected String getName() {
+        return "P";
+    }
+
     @Override
     public String toString() {
-        return String.format("-<P:%d>-", baseCapacity);
+        return String.format("-<%s:%d>-", getName(), baseCapacity);
     }
 
     private class PipeIterator implements Iterator<IndexedItem<I>> {
