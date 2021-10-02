@@ -225,7 +225,7 @@ public abstract class Pipelines {
      * @return The action.
      */
     public static <I> PipeAction<I> action(int concurrency, Consumer<I> accept) {
-        return action(new Pipe<>(concurrency), new Pipe<>(concurrency), concurrency, accept);
+        return action(new IndexedPipe<>(concurrency), new IndexedPipe<>(concurrency), concurrency, accept);
     }
 
     /**
@@ -323,7 +323,7 @@ public abstract class Pipelines {
      * @return The consumer.
      */
     public static <I> PipeConsumer<I> consumer(int concurrency, Consumer<I> accept) {
-        return consumer(new Pipe<>(concurrency), concurrency, accept);
+        return consumer(new IndexedPipe<>(concurrency), concurrency, accept);
     }
 
     /**
