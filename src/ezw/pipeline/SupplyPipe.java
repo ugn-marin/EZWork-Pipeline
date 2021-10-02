@@ -13,19 +13,50 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
 
     /**
      * Constructs a supply pipe.
-     * @param baseCapacity The base capacity.
+     * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
+     *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
+     *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
+     *                     the pipe can reach <code>BC+N</code>.
      */
     public SupplyPipe(int baseCapacity) {
-        this(baseCapacity, null);
+        this(baseCapacity, (Predicate<I>) null);
+    }
+
+    /**
+     * Constructs a supply pipe.
+     * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
+     *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
+     *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
+     *                     the pipe can reach <code>BC+N</code>.
+     * @param name The name of the pipe.
+     */
+    public SupplyPipe(int baseCapacity, String name) {
+        this(baseCapacity, name, null);
     }
 
     /**
      * Constructs a conditional supply pipe.
-     * @param baseCapacity The base capacity.
+     * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
+     *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
+     *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
+     *                     the pipe can reach <code>BC+N</code>.
      * @param predicate The predicate by which to accept pushed items into the pipe. Ignored if null.
      */
     public SupplyPipe(int baseCapacity, Predicate<I> predicate) {
-        super(baseCapacity);
+        this(baseCapacity, String.format("S%sP", predicate != null ? "?" : ""), predicate);
+    }
+
+    /**
+     * Constructs a conditional supply pipe.
+     * @param baseCapacity The base capacity (<code>BC</code>) of the pipe. Used as the capacity for the in-order queue,
+     *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
+     *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
+     *                     the pipe can reach <code>BC+N</code>.
+     * @param name The name of the pipe.
+     * @param predicate The predicate by which to accept pushed items into the pipe. Ignored if null.
+     */
+    public SupplyPipe(int baseCapacity, String name, Predicate<I> predicate) {
+        super(baseCapacity, name);
         this.predicate = predicate;
     }
 
@@ -38,10 +69,5 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
     @Override
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
         push(indexedItem.getItem());
-    }
-
-    @Override
-    protected String getName() {
-        return String.format("S%sP", predicate != null ? "?" : "");
     }
 }

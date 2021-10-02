@@ -96,7 +96,7 @@ public class PipelineTest {
     void validations() throws Exception {
         // Range
         try {
-            new Pipe<Integer>(0);
+            new IndexedPipe<Integer>(0);
             fail();
         } catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
@@ -196,7 +196,7 @@ public class PipelineTest {
     void chart_disconnected() {
         try {
             Pipelines.direct(Pipelines.supplier(new SupplyPipe<Integer>(1), () -> null),
-                    Pipelines.consumer(new Pipe<>(1), x -> {}));
+                    Pipelines.consumer(new IndexedPipe<>(1), x -> {}));
             fail();
         } catch (PipelineConfigurationException e) {
             System.out.println(e.getMessage());
@@ -279,9 +279,9 @@ public class PipelineTest {
     void supplier1_lower1_upper1_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        Pipe<Character> lower = new Pipe<>(smallCapacity);
+        Pipe<Character> lower = new IndexedPipe<>(smallCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(supplyPipe, lower, 1);
-        Pipe<Character> upper = new Pipe<>(smallCapacity);
+        Pipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(lower, upper, 1);
         CharAccumulator charAccumulator = new CharAccumulator(upper, 1);
         var pipeline = Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator).build();
@@ -294,9 +294,9 @@ public class PipelineTest {
     void supplier1_lower10_upper10_accumulator1() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        Pipe<Character> lower = new Pipe<>(smallCapacity);
+        Pipe<Character> lower = new IndexedPipe<>(smallCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(supplyPipe, lower, 1);
-        Pipe<Character> upper = new Pipe<>(smallCapacity);
+        Pipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(lower, upper, 1);
         CharAccumulator charAccumulator = new CharAccumulator(upper, 1);
         var pipeline = Pipeline.from(charSupplier).through(charLowerFunction, charUpperFunction).into(charAccumulator).build();
@@ -358,12 +358,7 @@ public class PipelineTest {
 
     @Test
     void supplier1_large_accumulator1slow_checkPipe() throws Exception {
-        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity) {
-            @Override
-            protected String getName() {
-                return "Large";
-            }
-        };
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity, "Large");
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
@@ -489,14 +484,14 @@ public class PipelineTest {
     void supplier1_large_fork_accumulator1slow_print() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        CharAccumulator charAccumulator = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
+        CharAccumulator charAccumulator = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 5);
                 super.accept(item);
             }
         };
-        var printer = new Printer<>(System.out, new Pipe<Character>(mediumCapacity), 1);
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(mediumCapacity), 1);
         var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
         validate(pipeline);
         pipeline.run();
@@ -510,17 +505,17 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(charSupplier);
 
-        Pipe<Character> toUpper = new Pipe<>(smallCapacity);
-        Pipe<Character> toLower = new Pipe<>(mediumCapacity);
+        Pipe<Character> toUpper = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toLower = new IndexedPipe<>(mediumCapacity);
         builder = builder.fork(supplyPipe, toUpper, toLower);
 
-        Pipe<Character> upper = new Pipe<>(smallCapacity);
+        Pipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 1);
-        Pipe<Character> lower = new Pipe<>(mediumCapacity);
+        Pipe<Character> lower = new IndexedPipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 1);
         builder = builder.through(charLowerFunction, charUpperFunction);
 
-        Pipe<Character> mix = new Pipe<>(mediumCapacity);
+        Pipe<Character> mix = new IndexedPipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(mix, 1);
 
         builder = builder.join(charAccumulator, charUpperFunction, charLowerFunction);
@@ -538,23 +533,23 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         var builder = Pipeline.from(charSupplier);
 
-        Pipe<Character> toUpper = new Pipe<>(smallCapacity);
-        Pipe<Character> toLower = new Pipe<>(mediumCapacity);
-        Pipe<Character> toIdentity = new Pipe<>(mediumCapacity);
+        Pipe<Character> toUpper = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toLower = new IndexedPipe<>(mediumCapacity);
+        Pipe<Character> toIdentity = new IndexedPipe<>(mediumCapacity);
         SupplyPipe<Character> hyphens = new SupplyPipe<>(largeCapacity, c -> c == '-');
         builder = builder.fork(supplyPipe, toUpper, toLower, toIdentity, hyphens);
 
-        Pipe<Character> upper = new Pipe<>(smallCapacity);
+        Pipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 1);
-        Pipe<Character> lower = new Pipe<>(mediumCapacity);
+        Pipe<Character> lower = new IndexedPipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 1);
-        PipeFunction<Character, Character> identity = Pipelines.function(toIdentity, new Pipe<>(smallCapacity),
+        PipeFunction<Character, Character> identity = Pipelines.function(toIdentity, new IndexedPipe<>(smallCapacity),
                 Function.identity());
-        Pipe<Character> toPrint = new Pipe<>(minimumCapacity);
+        Pipe<Character> toPrint = new IndexedPipe<>(minimumCapacity);
         builder = builder.through(charLowerFunction, charUpperFunction, identity, Pipelines.function(hyphens, toPrint,
                 Function.identity()));
 
-        Pipe<Character> mix = new Pipe<>(mediumCapacity);
+        Pipe<Character> mix = new IndexedPipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(mix, 1);
 
         builder = builder.join(charAccumulator, charUpperFunction, charLowerFunction, identity);
@@ -578,11 +573,11 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
         var builder = Pipeline.from(charSupplier);
 
-        Pipe<Character> toUpper = new Pipe<>(smallCapacity);
-        Pipe<Character> toLower = new Pipe<>(mediumCapacity);
+        Pipe<Character> toUpper = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toLower = new IndexedPipe<>(mediumCapacity);
         builder = builder.fork(supplyPipe, toUpper, toLower);
 
-        Pipe<Character> upper = new Pipe<>(smallCapacity);
+        IndexedPipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 3) {
             @Override
             public Character apply(Character item) throws InterruptedException {
@@ -590,7 +585,7 @@ public class PipelineTest {
                 return super.apply(item);
             }
         };
-        Pipe<Character> lower = new Pipe<>(mediumCapacity);
+        IndexedPipe<Character> lower = new IndexedPipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 3) {
             @Override
             public Character apply(Character item) throws InterruptedException {
@@ -600,11 +595,11 @@ public class PipelineTest {
         };
         builder = builder.through(charLowerFunction, charUpperFunction);
 
-        Pipe<Character> mix = new Pipe<>(mediumCapacity);
+        Pipe<Character> mix = new IndexedPipe<>(mediumCapacity);
         builder = builder.join(mix, upper, lower);
 
-        Pipe<Character> toAccum = new Pipe<>(smallCapacity);
-        Pipe<Character> toPrint = new Pipe<>(smallCapacity);
+        Pipe<Character> toAccum = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toPrint = new IndexedPipe<>(smallCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
@@ -630,18 +625,8 @@ public class PipelineTest {
     void supplier1_large_fork_accumulator2slow_print_fail() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        Pipe<Character> toAccum = new Pipe<>(smallCapacity) {
-            @Override
-            protected String getName() {
-                return "accum";
-            }
-        };
-        Pipe<Character> toPrint = new Pipe<>(mediumCapacity) {
-            @Override
-            protected String getName() {
-                return "out";
-            }
-        };
+        Pipe<Character> toAccum = new IndexedPipe<>(smallCapacity, "accum");
+        Pipe<Character> toPrint = new IndexedPipe<>(mediumCapacity, "out");
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
             @Override
             public void accept(Character item) throws InterruptedException {
@@ -669,8 +654,8 @@ public class PipelineTest {
     void supplier1_large_fork_accumulator2slow_print_cancel() throws Exception {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
         CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
-        Pipe<Character> toAccum = new Pipe<>(smallCapacity);
-        Pipe<Character> toPrint = new Pipe<>(mediumCapacity);
+        Pipe<Character> toAccum = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toPrint = new IndexedPipe<>(mediumCapacity);
         CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
             @Override
             public void accept(Character item) throws InterruptedException {
@@ -795,8 +780,8 @@ public class PipelineTest {
         var supplier = new CharSupplier(five, new SupplyPipe<>(largeCapacity), 1);
         var transformer = new WordsTransformer(supplier.getOutput(), new SupplyPipe<>(mediumCapacity), 1);
         final AtomicInteger wordsCount = new AtomicInteger();
-        Pipe<String> toAccum = new Pipe<>(smallCapacity);
-        Pipe<String> toPrint = new Pipe<>(mediumCapacity);
+        Pipe<String> toAccum = new IndexedPipe<>(smallCapacity);
+        Pipe<String> toPrint = new IndexedPipe<>(mediumCapacity);
         var consumer = Pipelines.consumer(toAccum, s -> wordsCount.incrementAndGet());
         var printer = new Printer<>(System.out, toPrint, 1);
         Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).build().run();
@@ -811,8 +796,8 @@ public class PipelineTest {
         var supplier = new CharSupplier(five, new SupplyPipe<>(largeCapacity), 1);
         var transformer = new WordsTransformer(supplier.getOutput(), new SupplyPipe<>(mediumCapacity, s -> s.length() <= 2), 1);
         final AtomicInteger wordsCount = new AtomicInteger();
-        Pipe<String> toAccum = new Pipe<>(smallCapacity);
-        Pipe<String> toPrint = new Pipe<>(mediumCapacity);
+        Pipe<String> toAccum = new IndexedPipe<>(smallCapacity);
+        Pipe<String> toPrint = new IndexedPipe<>(mediumCapacity);
         var consumer = Pipelines.consumer(toAccum, s -> wordsCount.incrementAndGet());
         var printer = new Printer<>(System.out, toPrint, 1);
         var pipeline = Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).build();
@@ -952,7 +937,7 @@ public class PipelineTest {
     void mixed_fork() throws Exception {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(mediumCapacity), 1);
         var accum1 = new CharAccumulator(new SupplyPipe<>(mediumCapacity, c -> c == '-'), 1);
-        var accum2 = new CharAccumulator(new Pipe<>(minimumCapacity), 1);
+        var accum2 = new CharAccumulator(new IndexedPipe<>(minimumCapacity), 1);
         var pipeline = Pipelines.star(supplier, accum1, accum2);
         validate(pipeline);
         pipeline.run();
@@ -992,14 +977,14 @@ public class PipelineTest {
 
     @Test
     void open_star_slow() throws Exception {
-        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
+        var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 20);
                 super.accept(item);
             }
         };
-        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1) {
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleepBetween(1, 50);
@@ -1021,14 +1006,14 @@ public class PipelineTest {
 
     @Test
     void open_star_slow_stop() throws Exception {
-        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1) {
+        var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleep(2);
                 super.accept(item);
             }
         };
-        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1) {
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleep(2);
@@ -1051,14 +1036,14 @@ public class PipelineTest {
 
     @Test
     void open_star_slow_stop_count() throws Exception {
-        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 10) {
+        var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 10) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleep(2000);
                 super.accept(item);
             }
         };
-        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 10) {
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 10) {
             @Override
             public void accept(Character item) throws InterruptedException {
                 sleep(2000);
@@ -1081,8 +1066,8 @@ public class PipelineTest {
 
     @Test
     void open_star_push_nulls() throws Exception {
-        var consumer = new CharAccumulator(new Pipe<>(smallCapacity), 1);
-        var printer = new Printer<>(System.out, new Pipe<Character>(smallCapacity), 1);
+        var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1);
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1);
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
         Concurrent.calculate(() -> {
@@ -1104,8 +1089,8 @@ public class PipelineTest {
         var counter = new AtomicInteger();
         var supplier = Pipelines.supplier(counter);
         var builder = Pipeline.from(supplier);
-        var a1 = Pipelines.action(new Pipe<>(1), new Pipe<>(10), AtomicInteger::incrementAndGet);
-        var a2 = Pipelines.action(new Pipe<>(2), new Pipe<>(2), AtomicInteger::incrementAndGet);
+        var a1 = Pipelines.action(new IndexedPipe<>(1), new IndexedPipe<>(10), AtomicInteger::incrementAndGet);
+        var a2 = Pipelines.action(new IndexedPipe<>(2), new IndexedPipe<>(2), AtomicInteger::incrementAndGet);
         var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
         builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
         var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
@@ -1121,8 +1106,8 @@ public class PipelineTest {
         var counter = new AtomicInteger();
         var supplier = Pipelines.supplier(counter);
         var builder = Pipeline.from(supplier);
-        var a1 = Pipelines.action(new Pipe<>(1), new Pipe<>(10), AtomicInteger::incrementAndGet);
-        var a2 = Pipelines.action(new Pipe<>(2), new Pipe<>(2), AtomicInteger::incrementAndGet);
+        var a1 = Pipelines.action(new IndexedPipe<>(1), new IndexedPipe<>(10), AtomicInteger::incrementAndGet);
+        var a2 = Pipelines.action(new IndexedPipe<>(2), new IndexedPipe<>(2), AtomicInteger::incrementAndGet);
         var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
         builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
         var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
@@ -1174,20 +1159,20 @@ public class PipelineTest {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(supplier);
-        var supplied1 = new Pipe<Character>(11);
-        var supplied2 = new Pipe<Character>(12);
-        var supplied3 = new Pipe<Character>(13);
-        var supplied4 = new Pipe<Character>(14);
+        var supplied1 = new IndexedPipe<Character>(11);
+        var supplied2 = new IndexedPipe<Character>(12);
+        var supplied3 = new IndexedPipe<Character>(13);
+        var supplied4 = new IndexedPipe<Character>(14);
         builder.fork(supplyPipe, supplied1, supplied2, supplied3, supplied4);
-        var supplied1f = new Pipe<Character>(21);
-        var supplied3a = new Pipe<Character>(31);
+        var supplied1f = new IndexedPipe<Character>(21);
+        var supplied3a = new IndexedPipe<Character>(31);
         var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
         var a = Pipelines.action(supplied3, supplied3a, 6, (Consumer<Character>) Interruptible::sleep);
         builder.through(f, a);
         var words = new SupplyPipe<String>(mediumCapacity, word -> word.length() < 3);
         var wordsTrans = new WordsTransformer(supplied4, words);
         builder.through(wordsTrans);
-        var joined = new Pipe<Character>(minimumCapacity);
+        var joined = new IndexedPipe<Character>(minimumCapacity);
         builder.join(joined, supplied1f, supplied2, supplied3a);
         var joinedAccum = new CharAccumulator(joined, 1);
         var wordsPrinter = new Printer<>(System.out, words, 1);
@@ -1203,17 +1188,17 @@ public class PipelineTest {
         var supplyPipe = new SupplyPipe<Character>(smallCapacity);
         var supplier = new CharSupplier(full, supplyPipe, 1);
         var builder = Pipeline.from(supplier);
-        var supplied1 = new Pipe<Character>(11);
-        var supplied2 = new Pipe<Character>(12);
-        var supplied3 = new Pipe<Character>(13);
+        var supplied1 = new IndexedPipe<Character>(11);
+        var supplied2 = new IndexedPipe<Character>(12);
+        var supplied3 = new IndexedPipe<Character>(13);
         builder.fork(supplyPipe, supplied1, supplied2, supplied3);
-        var supplied1f = new Pipe<Character>(21);
+        var supplied1f = new IndexedPipe<Character>(21);
         var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
         builder.through(f);
         var words = new SupplyPipe<String>(mediumCapacity);
         var wordsTrans = new WordsTransformer(supplied3, words);
         builder.through(wordsTrans);
-        var joined = new Pipe<Character>(minimumCapacity);
+        var joined = new IndexedPipe<Character>(minimumCapacity);
         builder.join(joined, supplied1f, supplied2);
         var joinedAccum = new CharAccumulator(joined, 1);
         var wordsPrinter = new Printer<>(System.out, words, 1);
@@ -1255,8 +1240,8 @@ public class PipelineTest {
         var supplyPipe = new SupplyPipe<Character>(root);
         var builder = Pipeline.from(supplyPipe);
         Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () ->
-                new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
-        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity()))
+                new IndexedPipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
+        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
                 .toArray(Pipe[]::new);
         PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
         for (int i = 0; i < actions.length; i++) {
@@ -1275,9 +1260,9 @@ public class PipelineTest {
             if (pipes.length == 2) {
                 consumers.add(Pipelines.consumer(pipe, t -> consumersRun.incrementAndGet()));
             } else {
-                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new Pipe<T>(pipes.length - 2))
+                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new IndexedPipe<T>(pipes.length - 2))
                         .toArray(Pipe[]::new);
-                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<T>(p.getBaseCapacity()))
+                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
                         .toArray(Pipe[]::new);
                 PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
                 for (int i = 0; i < actions.length; i++) {
@@ -1323,8 +1308,8 @@ public class PipelineTest {
         var supplyPipe = new SupplyPipe<Character>(root);
         var builder = Pipeline.from(supplyPipe);
         Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () ->
-                new Pipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
-        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<Character>(p.getBaseCapacity()))
+                new IndexedPipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
+        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
                 .toArray(Pipe[]::new);
         PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
         for (int i = 0; i < actions.length; i++) {
@@ -1336,7 +1321,7 @@ public class PipelineTest {
         builder.through(functions);
         List<Pipe<Integer>> joined = new ArrayList<>(functions.length / 2);
         for (int i = 0; i < functions.length; i += 2) {
-            Pipe<Integer> output = new Pipe<>(2);
+            Pipe<Integer> output = new IndexedPipe<>(2);
             builder.join(output, functions[i].getOutput(), functions[i + 1].getOutput());
             joined.add(output);
         }
@@ -1348,11 +1333,11 @@ public class PipelineTest {
         List<PipeFunction<T, Integer>> functions = new ArrayList<>(pipes.length * (pipes.length - 1) / 2);
         for (var pipe : pipes) {
             if (pipes.length == 2) {
-                functions.add(Pipelines.function(pipe, new Pipe<>(1), t -> functionsRun.incrementAndGet()));
+                functions.add(Pipelines.function(pipe, new IndexedPipe<>(1), t -> functionsRun.incrementAndGet()));
             } else {
-                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new Pipe<T>(pipes.length - 2))
+                Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new IndexedPipe<T>(pipes.length - 2))
                         .toArray(Pipe[]::new);
-                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new Pipe<T>(p.getBaseCapacity()))
+                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
                         .toArray(Pipe[]::new);
                 PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
                 for (int i = 0; i < actions.length; i++) {
@@ -1376,8 +1361,8 @@ public class PipelineTest {
             for (int j = 0; j < group; j++) {
                 inputs[j] = joins.get(i + j);
             }
-            Pipe<Integer> output = new Pipe<>(group);
-            PipeAction<Integer> action = Pipelines.action(output, new Pipe<>(group), n -> actionsRun.incrementAndGet());
+            Pipe<Integer> output = new IndexedPipe<>(group);
+            PipeAction<Integer> action = Pipelines.action(output, new IndexedPipe<>(group), n -> actionsRun.incrementAndGet());
             builder.join(output, inputs).through(action);
             joined.add(action.getOutput());
         }

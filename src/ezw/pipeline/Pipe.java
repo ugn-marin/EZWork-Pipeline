@@ -17,10 +17,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * A queue of items moved between pipeline workers.
  * @param <I> The items type.
  */
-public class Pipe<I> implements Iterable<IndexedItem<I>> {
+public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     private static final long POLLING_TIMEOUT = 100;
 
     private final int baseCapacity;
+    private final String name;
     private final PipeIterator iterator = new PipeIterator();
     private final ReentrantLock lock = new ReentrantLock(true);
     private final BlockingQueue<IndexedItem<I>> inOrderQueue;
@@ -35,9 +36,11 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
      *                     as well as the out-of-order items cache. Together with the in-push items, which depends on
      *                     the number of the pushing threads <code>N</code>, the total maximum theoretical capacity of
      *                     the pipe can reach <code>BC+N</code>.
+     * @param name The name of the pipe.
      */
-    public Pipe(int baseCapacity) {
+    protected Pipe(int baseCapacity, String name) {
         this.baseCapacity = Sugar.requireRange(baseCapacity, 1, null);
+        this.name = name;
         inOrderQueue = new ArrayBlockingQueue<>(baseCapacity, true);
         outOfOrderItems = new HashMap<>();
     }
@@ -162,16 +165,9 @@ public class Pipe<I> implements Iterable<IndexedItem<I>> {
         return iterator;
     }
 
-    /**
-     * Returns the name of the pipe.
-     */
-    protected String getName() {
-        return "P";
-    }
-
     @Override
     public String toString() {
-        return String.format("-<%s:%d>-", getName(), baseCapacity);
+        return String.format("-<%s:%d>-", name, baseCapacity);
     }
 
     private class PipeIterator implements Iterator<IndexedItem<I>> {
