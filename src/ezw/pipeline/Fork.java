@@ -35,8 +35,8 @@ final class Fork<I> extends PipeConnector implements InputWorker<I> {
 
     @Override
     protected void work() throws InterruptedException {
-        for (IndexedItem<I> indexedItem : input) {
-            for (Pipe<I> output : outputs) {
+        for (var indexedItem : input) {
+            for (var output : outputs) {
                 if (output instanceof SupplyGate)
                     output.push(indexedItem);
                 else

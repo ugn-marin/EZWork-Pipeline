@@ -45,9 +45,9 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
 
     @Override
     protected void work() {
-        for (Pipe<I> input : inputs) {
+        for (var input : inputs) {
             submit(() -> {
-                for (IndexedItem<I> indexedItem : input) {
+                for (var indexedItem : input) {
                     push(indexedItem);
                 }
             });

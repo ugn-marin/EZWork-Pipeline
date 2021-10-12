@@ -577,7 +577,7 @@ public class PipelineTest {
         Pipe<Character> toLower = new IndexedPipe<>(mediumCapacity);
         builder = builder.fork(supplyPipe, toUpper, toLower);
 
-        IndexedPipe<Character> upper = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> upper = new IndexedPipe<>(smallCapacity);
         CharUpperFunction charUpperFunction = new CharUpperFunction(toUpper, upper, 3) {
             @Override
             public Character apply(Character item) throws InterruptedException {
@@ -585,7 +585,7 @@ public class PipelineTest {
                 return super.apply(item);
             }
         };
-        IndexedPipe<Character> lower = new IndexedPipe<>(mediumCapacity);
+        Pipe<Character> lower = new IndexedPipe<>(mediumCapacity);
         CharLowerFunction charLowerFunction = new CharLowerFunction(toLower, lower, 3) {
             @Override
             public Character apply(Character item) throws InterruptedException {
