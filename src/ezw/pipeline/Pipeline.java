@@ -55,7 +55,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
                 .collect(Collectors.toSet());
         if (!unexpectedWarnings.isEmpty())
             throw new PipelineConfigurationException(unexpectedWarnings);
-        for (PipelineWarning warning : pipelineWarnings) {
+        for (var warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
         toString = sb.toString();

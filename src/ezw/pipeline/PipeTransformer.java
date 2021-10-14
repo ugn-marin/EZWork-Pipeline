@@ -51,7 +51,7 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
 
     @Override
     protected void work() {
-        for (IndexedItem<I> indexedItem : input) {
+        for (var indexedItem : input) {
             submit(() -> push(apply(indexedItem.getItem())));
         }
         submit(() -> push(getLastItems()));

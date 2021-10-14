@@ -37,7 +37,7 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
 
     @Override
     protected void work() {
-        for (IndexedItem<I> indexedItem : input) {
+        for (var indexedItem : input) {
             submit(() -> accept(indexedItem.getItem()));
         }
     }
