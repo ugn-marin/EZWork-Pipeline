@@ -71,6 +71,18 @@ public class PipelineTest {
         assertTrue(pipeline.getWarnings().isEmpty(), "Warnings found");
     }
 
+    private static void bottlenecks(Pipeline<?> pipeline) {
+        var bottlenecks = pipeline.getBottlenecks();
+        if (!bottlenecks.isEmpty())
+            System.err.println("Bottlenecks: " + bottlenecks);
+    }
+
+    private static void assertBottleneck(InputWorker<?> expected, Pipeline<?> pipeline) {
+        var bottlenecks = pipeline.getBottlenecks();
+        assertEquals(1, bottlenecks.size());
+        assertEquals(expected, bottlenecks.stream().findFirst().orElseThrow());
+    }
+
     @Test
     void constructor_definitions() {
         SupplyPipe<Object> pipe = new SupplyPipe<>(1);
@@ -262,6 +274,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(abc, charAccumulator.getValue());
         assertTrue(pipeline.toString().contains("Pipeline of 2 workers on 2 working threads:"));
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -273,6 +286,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five, charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -288,6 +302,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.toUpperCase(), charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -303,6 +318,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.toUpperCase(), charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -320,6 +336,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five, charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -337,6 +354,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(full, charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -354,6 +372,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.length(), charAccumulator.getValue().length());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -374,6 +393,7 @@ public class PipelineTest {
         assertTrue(supplyPipe.totalItems() > mediumCapacity);
         future.get();
         assertEquals(five, charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -398,6 +418,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(five.length() * 5, charAccumulator.getValue().length());
         assertTrue(pipeline.toString().contains("Pipeline of 2 workers on 25 working threads:"));
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -421,6 +442,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.length() * 5, charAccumulator.getValue().length());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -444,6 +466,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five.length() * 5, charAccumulator.getValue().length());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -478,6 +501,7 @@ public class PipelineTest {
         assertTrue(pipeline.getCancelledWork() > 0);
         assertTrue(five.length() * 5 > charAccumulator.getValue().length());
         assertEquals(0, supplyPipe.totalItems());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -497,6 +521,8 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(five, charAccumulator.getValue());
         assertTrue(pipeline.toString().contains("Pipeline of 3 workers on 3 working threads:"));
+        bottlenecks(pipeline);
+        assertBottleneck(charAccumulator, pipeline);
     }
 
     @Test
@@ -525,6 +551,7 @@ public class PipelineTest {
         assertEquals(4, pipeline.getWorkersConcurrency());
         pipeline.run();
         assertEquals(switchCase(full), charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -565,6 +592,7 @@ public class PipelineTest {
         assertEquals(five.length(), toLower.getItemsPushed());
         assertEquals(five.length(), toIdentity.getItemsPushed());
         assertEquals(30, hyphens.getItemsPushed());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -619,6 +647,7 @@ public class PipelineTest {
         assertEquals(five.length(), supplyPipe.getItemsPushed());
         assertEquals(five.length(), upper.getItemsPushed());
         assertEquals(five.length(), lower.getItemsPushed());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -648,6 +677,8 @@ public class PipelineTest {
         }
         assert pipeline != null;
         assertTrue(pipeline.getCancelledWork() > 0);
+        bottlenecks(pipeline);
+        assertBottleneck(charAccumulator, pipeline);
     }
 
     @Test
@@ -677,6 +708,7 @@ public class PipelineTest {
             assertEquals("My cancellation message", e.getMessage());
         }
         assertTrue(pipeline.getCancelledWork() > 0);
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -699,6 +731,7 @@ public class PipelineTest {
         } catch (ExecutionException e) {
             Assertions.assertEquals(NumberFormatException.class, e.getCause().getClass());
         }
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -723,6 +756,7 @@ public class PipelineTest {
         } catch (ExecutionException e) {
             Assertions.assertEquals(NumberFormatException.class, e.getCause().getClass());
         }
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -734,6 +768,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc.replace("-", ""), charAccumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -745,6 +780,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc.replace("-", ""), accumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -756,6 +792,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five, accumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -773,6 +810,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(five, accumulator.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -784,11 +822,14 @@ public class PipelineTest {
         Pipe<String> toPrint = new IndexedPipe<>(mediumCapacity);
         var consumer = Pipelines.consumer(toAccum, s -> wordsCount.incrementAndGet());
         var printer = new Printer<>(System.out, toPrint, 1);
-        Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).build().run();
+        var pipeline = Pipeline.from(supplier).through(transformer).fork(transformer, consumer, printer).into(consumer, printer).build();
+        validate(pipeline);
+        pipeline.run();
         assertEquals(125, wordsCount.get());
         assertEquals(125, toAccum.getItemsPushed());
         assertEquals(125, toPrint.getItemsPushed());
         assertEquals(five.length(), supplier.getOutput().getItemsPushed());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -804,6 +845,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(25, wordsCount.get());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -816,6 +858,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals("TABC" + ABC.replace("-", ""), consumer.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -828,6 +871,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc.replace("-", ""), accum2.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -838,6 +882,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(abc.replace("-", ""), accum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -868,6 +913,7 @@ public class PipelineTest {
         assertEquals("-".repeat(12), accum.getValue());
         assertEquals(12, supplyPipe.getItemsPushed());
         assertEquals(0, pipeline.getCancelledWork());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -878,6 +924,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals("The avrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ0123456789.", accum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -889,6 +936,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(),
                 accum.getValue().length());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -898,6 +946,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n", accum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -908,6 +957,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(),
                 accum.getValue().length());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -918,6 +968,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals("1. Theavrgpsonuldbtic,wkABC:D-EFGHIJKLMNOPQRSUVWXYZ023456789\n".length(), counter.get());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -931,6 +982,7 @@ public class PipelineTest {
         pipeline.setEndOfInput();
         pipeline.await();
         assertEquals(five, accum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -943,6 +995,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc, accum2.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -973,6 +1026,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("------", accum1.getValue());
         assertEquals(abc.replace("-", ""), accum2.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1002,6 +1056,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(full, consumer.getValue());
         assertEquals(0, pipeline.getCancelledWork());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1032,6 +1087,7 @@ public class PipelineTest {
         pipeline.run();
         assertTrue(full.startsWith(consumer.getValue()));
         assertTrue(pipeline.getCancelledWork() > 0);
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1062,6 +1118,7 @@ public class PipelineTest {
         assertEquals(20, pipeline.getWorkersConcurrency());
         pipeline.run();
         assertEquals(20, pipeline.getCancelledWork());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1082,6 +1139,7 @@ public class PipelineTest {
         assertEquals(full.length() * 5, consumer.getValue().length());
         assertEquals(full, Sugar.remove(consumer.getValue(), "null"));
         assertEquals(0, pipeline.getCancelledWork());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1099,6 +1157,7 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(5, counter.get());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1118,6 +1177,7 @@ public class PipelineTest {
         assertTrue(a3.setEnabled(false));
         pipeline.run();
         assertEquals(3, counter.get());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1135,6 +1195,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals("02468", even.toString());
         assertEquals("13579", odd.toString());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1152,6 +1213,7 @@ public class PipelineTest {
         Concurrent.parallel(tasks.stream().map(UnsafeRunnable::toRunnable).toArray(Runnable[]::new));
         pipeline.setEndOfInput();
         pipeline.await();
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1181,6 +1243,7 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
         assertNotEquals(full, joinedAccum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
@@ -1207,11 +1270,12 @@ public class PipelineTest {
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
         assertNotEquals(full, joinedAccum.getValue());
+        bottlenecks(pipeline);
     }
 
     @Test
     void tree() throws InterruptedException {
-        int root = 4;
+        int root = 3;
         var pipeline = tree(root);
         validate(pipeline);
         Concurrent.calculate(pipeline);
@@ -1233,6 +1297,7 @@ public class PipelineTest {
         }
         Assertions.assertEquals(actionsCount * times, actionsRun.get());
         Assertions.assertEquals(consumersCount * times, consumersRun.get());
+        bottlenecks(pipeline);
     }
 
     @SuppressWarnings("unchecked")
@@ -1301,6 +1366,7 @@ public class PipelineTest {
         Assertions.assertEquals(actionsCount * times, actionsRun.get());
         Assertions.assertEquals(functionsCount * times, functionsRun.get());
         Assertions.assertEquals(times, consumersRun.get());
+        bottlenecks(pipeline);
     }
 
     @SuppressWarnings("unchecked")
