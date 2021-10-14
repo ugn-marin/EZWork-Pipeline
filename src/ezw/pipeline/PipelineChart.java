@@ -173,7 +173,7 @@ class PipelineChart {
             if (start != -1)
                 raiseRange(Range.of(start, matrix.size().getX()), y);
         }
-        matrix.pack(true, false);
+        matrix.packRows();
     }
 
     private void raiseRange(Range range, int y) {

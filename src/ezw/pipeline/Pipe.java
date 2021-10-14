@@ -1,6 +1,7 @@
 package ezw.pipeline;
 
 import ezw.Sugar;
+import ezw.calc.Scale;
 import ezw.concurrent.InterruptedRuntimeException;
 import ezw.concurrent.Interruptible;
 
@@ -28,6 +29,7 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     private final Map<Long, IndexedItem<I>> outOfOrderItems;
     private final AtomicInteger inPush = new AtomicInteger();
     private long expectedIndex = 0;
+    private long totalsSum = 0;
     private boolean endOfInput = false;
 
     /**
@@ -88,6 +90,14 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
         return expectedIndex;
     }
 
+    /**
+     * Returns the average load of the pipe up to this point (average size out of base capacity), between 0 and 1.
+     */
+    public double getAverageLoad() {
+        return Scale.getDefault().apply(expectedIndex == 0 ? 0 :
+                Math.min((double) totalsSum / (expectedIndex * baseCapacity), 1));
+    }
+
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
         inPush.incrementAndGet();
         try {
@@ -120,6 +130,7 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
         if (indexedItem.getIndex() == expectedIndex) {
             inOrderQueue.put(indexedItem);
             expectedIndex++;
+            totalsSum += totalItems() - 1;
         } else {
             if (outOfOrderItems.size() > inPushItems())
                 return false;

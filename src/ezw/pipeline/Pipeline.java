@@ -94,10 +94,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     void internalClose() {
         setEndOfInput();
         pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(getThrowable()));
-        Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
-                .map(InputWorker::getInput).forEach(Pipe::clear);
-        Sugar.<OutputWorker<?>>instancesOf(pipelineWorkers, OutputWorker.class).stream()
-                .map(OutputWorker::getOutput).forEach(Pipe::clear);
+        Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream().map(InputWorker::getInput)
+                .forEach(Pipe::clear);
+        Sugar.<OutputWorker<?>>instancesOf(pipelineWorkers, OutputWorker.class).stream().map(OutputWorker::getOutput)
+                .forEach(Pipe::clear);
     }
 
     /**
@@ -114,6 +114,15 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public Set<PipelineWarning> getWarnings() {
         return new LinkedHashSet<>(pipelineWarnings);
+    }
+
+    /**
+     * Returns a set of input workers which have an input pipe average load of over 0.9, during or after the execution.
+     */
+    public Set<InputWorker<?>> getBottlenecks() {
+        return Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
+                .filter(iw -> !(iw instanceof PipeConnector) && iw.getInput().getAverageLoad() > 0.9)
+                .collect(Collectors.toSet());
     }
 
     @Override
