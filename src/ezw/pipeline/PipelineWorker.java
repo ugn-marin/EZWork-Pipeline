@@ -41,25 +41,23 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public void run() throws Exception {
         oneShot.check("The pipeline worker instance cannot be reused.");
-        try {
+        interceptThrowable(() -> {
             work();
             if (executorService.isCalculated())
                 Concurrent.join(executorService.get());
+        }, () -> interceptThrowable(this::close, () -> interceptThrowable(this::internalClose, () -> {
+            latch.release();
+            Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+        })));
+    }
+
+    private void interceptThrowable(UnsafeRunnable run, UnsafeRunnable close) throws Exception {
+        try {
+            run.run();
         } catch (Throwable t) {
             setThrowable(t);
         } finally {
-            try {
-                close();
-            } catch (Throwable t) {
-                setThrowable(t);
-            } finally {
-                try {
-                    internalClose();
-                } finally {
-                    latch.release();
-                    Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
-                }
-            }
+            close.run();
         }
     }
 
@@ -85,7 +83,6 @@ public abstract class PipelineWorker implements UnsafeRunnable {
                 return work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
-                Sugar.throwIfNonNull(t);
                 throw t;
             }
         });

@@ -118,6 +118,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Returns a set of input workers which have an input pipe average load of over 0.9, during or after the execution.
+     * An empty set means the supplier(s) probably hadn't subjected the pipeline to its potential throughput.
      */
     public Set<InputWorker<?>> getBottlenecks() {
         return Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
