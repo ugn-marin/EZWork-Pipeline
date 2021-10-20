@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An unsafe runnable executing in a pipeline.
  */
 public abstract class PipelineWorker implements UnsafeRunnable {
+    private static final AtomicInteger workerThreadNumber = new AtomicInteger();
+
     private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
@@ -23,7 +25,8 @@ public abstract class PipelineWorker implements UnsafeRunnable {
 
     PipelineWorker(int concurrency) {
         this.concurrency = concurrency;
-        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency));
+        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
+                String.format("PW %d (%s)", workerThreadNumber.incrementAndGet(), getName()))));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 

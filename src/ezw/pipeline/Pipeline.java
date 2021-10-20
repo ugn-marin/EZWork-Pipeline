@@ -127,6 +127,11 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
+    protected String getName() {
+        return getClass().getSimpleName();
+    }
+
+    @Override
     public String toString() {
         return toString;
     }

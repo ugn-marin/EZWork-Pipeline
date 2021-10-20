@@ -3,6 +3,7 @@ package ezw.pipeline;
 import ezw.Sugar;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
+import ezw.function.Reducer;
 import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
@@ -388,7 +389,7 @@ public class PipelineTest {
         };
         var pipeline = Pipelines.direct(charSupplier, charAccumulator);
         validate(pipeline);
-        var future = Concurrent.calculate(pipeline);
+        var future = Concurrent.run(pipeline);
         sleep(200);
         assertTrue(supplyPipe.totalItems() > mediumCapacity);
         future.get();
@@ -488,7 +489,7 @@ public class PipelineTest {
         };
         var pipeline = Pipelines.direct(charSupplier, charAccumulator);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             sleep(600);
             pipeline.interrupt();
         });
@@ -697,7 +698,7 @@ public class PipelineTest {
         var printer = new Printer<>(System.out, toPrint, 1);
         var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             sleep(600);
             pipeline.cancel(new NumberFormatException("My cancellation message"));
         });
@@ -719,7 +720,7 @@ public class PipelineTest {
                 throw new NumberFormatException();
         })).build();
         validate(pipeline);
-        var future = Concurrent.calculate(pipeline);
+        var future = Concurrent.run(pipeline);
         for (int i = 0; i < 10; i++) {
             pipeline.push(i);
         }
@@ -742,8 +743,8 @@ public class PipelineTest {
                 throw new NumberFormatException();
         })).build();
         validate(pipeline);
-        var future = Concurrent.calculate(pipeline);
-        Concurrent.calculate(() -> {
+        var future = Concurrent.run(pipeline);
+        Concurrent.run(() -> {
             for (int i = 0; i < 10; i++) {
                 pipeline.push(i);
             }
@@ -977,7 +978,7 @@ public class PipelineTest {
         var accum = new CharAccumulator(supplyPipe, 1);
         var pipeline = Pipeline.from(supplyPipe).into(accum).build();
         validate(pipeline);
-        Concurrent.calculate(pipeline);
+        Concurrent.run(pipeline);
         pipeline.pushAll(five.chars().mapToObj(c -> (char) c));
         pipeline.setEndOfInput();
         pipeline.await();
@@ -1047,7 +1048,7 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             for (char c : full.toCharArray()) {
                 pipeline.push(c);
             }
@@ -1077,7 +1078,7 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             for (char c : full.toCharArray()) {
                 pipeline.push(c);
             }
@@ -1108,7 +1109,7 @@ public class PipelineTest {
         };
         final var pipeline = Pipelines.star(new SupplyPipe<>(mediumCapacity), consumer, printer);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             for (char c : full.toCharArray()) {
                 pipeline.push(c);
             }
@@ -1127,7 +1128,7 @@ public class PipelineTest {
         var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1);
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             var sgc = pipeline.toConsumer();
             for (char c : full.toCharArray()) {
                 sgc.accept(c);
@@ -1186,7 +1187,7 @@ public class PipelineTest {
         final var odd = new StringBuilder();
         final var pipeline = Pipelines.<Integer>split(n -> n % 2 == 0, even::append, odd::append);
         validate(pipeline);
-        Concurrent.calculate(() -> {
+        Concurrent.run(() -> {
             for (int i = 0; i < 10; i++) {
                 pipeline.push(i);
             }
@@ -1199,18 +1200,18 @@ public class PipelineTest {
     }
 
     @Test
-    void pipe_throughput() throws ExecutionException, InterruptedException {
+    void pipe_throughput() throws Exception {
         int concurrency = 8;
         var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
         var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, concurrency, i -> {})).build();
         validate(pipeline);
-        Concurrent.calculate(pipeline);
+        Concurrent.run(pipeline);
         var tasks = Sugar.fill(concurrency, () -> (UnsafeRunnable) () -> {
             for (int i = 0; i < 100000; i++) {
                 pipeline.push(i);
             }
         });
-        Concurrent.parallel(tasks.stream().map(UnsafeRunnable::toRunnable).toArray(Runnable[]::new));
+        Concurrent.run(Reducer.last(), tasks.stream().map(UnsafeRunnable::toRunnable).toArray(Runnable[]::new));
         pipeline.setEndOfInput();
         pipeline.await();
         bottlenecks(pipeline);
@@ -1278,7 +1279,7 @@ public class PipelineTest {
         int root = 3;
         var pipeline = tree(root);
         validate(pipeline);
-        Concurrent.calculate(pipeline);
+        Concurrent.run(pipeline);
         int times = 3;
         Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
         pipeline.setEndOfInput();
@@ -1345,7 +1346,7 @@ public class PipelineTest {
         int root = 4;
         var pipeline = treeJoin(root);
         validate(pipeline);
-        Concurrent.calculate(pipeline);
+        Concurrent.run(pipeline);
         int times = 50;
         Sugar.repeat(times, () -> Interruptible.run(() -> pipeline.push('a')));
         pipeline.setEndOfInput();
