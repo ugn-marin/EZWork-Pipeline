@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 import ezw.flow.OneShot;
+import ezw.function.Reducer;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -226,7 +227,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          */
         @SafeVarargs
         public final <I> Builder<S> join(Pipe<I> output, Pipe<I>... inputs) {
-            return attach(new Join<>(output, inputs));
+            return join(null, output, inputs);
         }
 
         /**
@@ -238,10 +239,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          * @return This builder.
          */
         @SafeVarargs
-        @SuppressWarnings("unchecked")
         public final <I> Builder<S> join(Pipe<I> output, OutputWorker<I>... inputs) {
-            return join(output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputWorker::getOutput)
-                    .toArray(Pipe[]::new));
+            return join(null, output, inputs);
         }
 
         /**
@@ -254,7 +253,50 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          */
         @SafeVarargs
         public final <I> Builder<S> join(InputWorker<I> output, OutputWorker<I>... inputs) {
-            return join(output.getInput(), inputs);
+            return join(null, output, inputs);
+        }
+
+        /**
+         * Creates a join from the input pipes into the output pipe.
+         * @param reducer An optional reducer for the join input items.
+         * @param output The output pipe.
+         * @param inputs The input pipes.
+         * @param <I> The items type.
+         * @return This builder.
+         */
+        @SafeVarargs
+        public final <I> Builder<S> join(Reducer<I> reducer, Pipe<I> output, Pipe<I>... inputs) {
+            return attach(new Join<>(reducer, output, inputs));
+        }
+
+        /**
+         * Creates a join from the output workers (inputs of the join) into the output pipe. This does not attach the
+         * workers to the pipeline.
+         * @param reducer An optional reducer for the join input items.
+         * @param output The output pipe.
+         * @param inputs The output workers.
+         * @param <I> The items type.
+         * @return This builder.
+         */
+        @SafeVarargs
+        @SuppressWarnings("unchecked")
+        public final <I> Builder<S> join(Reducer<I> reducer, Pipe<I> output, OutputWorker<I>... inputs) {
+            return join(reducer, output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputWorker::getOutput)
+                    .toArray(Pipe[]::new));
+        }
+
+        /**
+         * Creates a join from the output workers (inputs of the join) into the input worker (output of the join). This
+         * does not attach the workers to the pipeline.
+         * @param reducer An optional reducer for the join input items.
+         * @param output The input worker.
+         * @param inputs The output workers.
+         * @param <I> The items type.
+         * @return This builder.
+         */
+        @SafeVarargs
+        public final <I> Builder<S> join(Reducer<I> reducer, InputWorker<I> output, OutputWorker<I>... inputs) {
+            return join(reducer, output.getInput(), inputs);
         }
 
         /**

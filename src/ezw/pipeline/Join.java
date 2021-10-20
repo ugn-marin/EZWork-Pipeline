@@ -1,28 +1,33 @@
 package ezw.pipeline;
 
 import ezw.Sugar;
+import ezw.function.Reducer;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
  * meaning that an item is only pushed once it was received from all input pipes. For that reason, all input pipes must
  * be <b>in the same index scope</b>.<br>
- * If any of the input items with a given index is marked modified, the last modified item is pushed, else the last
- * received item is pushed.
+ * The item pushed into the output pipe is reduced by the following logic:<br>
+ * 1. If a reducer was provided, the item is reduced from all items received for the particular index.<br>
+ * 2. If a reducer was not provided, and any of the input items with a given index is marked modified, the last modified
+ * item is pushed.<br>
+ * 3. For other cases (no reducer provided or no items modified), the last item received for the particular index is
+ * pushed.
  * @param <I> The items type.
  */
 final class Join<I> extends PipeConnector implements OutputWorker<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
+    private final Reducer<I> reducer;
     private final Map<Long, Integer> remainingInputs;
-    private final Map<Long, IndexedItem<I>> modifiedInputs;
+    private Map<Long, IndexedItem<I>> modifiedInputs;
+    private Map<Long, List<IndexedItem<I>>> allInputs;
 
     @SafeVarargs
-    Join(Pipe<I> output, Pipe<I>... inputs) {
+    Join(Reducer<I> reducer, Pipe<I> output, Pipe<I>... inputs) {
         super(Sugar.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new PipelineConfigurationException("Join requires at least 2 input pipes.");
@@ -30,8 +35,12 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
             throw new PipelineConfigurationException("Joining different index scopes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
+        this.reducer = reducer;
         remainingInputs = new HashMap<>(inputs.length);
-        modifiedInputs = new HashMap<>(inputs.length);
+        if (reducer == null)
+            modifiedInputs = new HashMap<>(inputs.length);
+        else
+            allInputs = new HashMap<>(inputs.length);
     }
 
     Pipe<I>[] getInputs() {
@@ -57,10 +66,9 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
     private void push(IndexedItem<I> indexedItem) throws InterruptedException {
         long index = indexedItem.getIndex();
         boolean push = false;
-        IndexedItem<I> modified = null;
+        IndexedItem<I> next = null;
         synchronized (remainingInputs) {
-            if (indexedItem.isModified())
-                modifiedInputs.put(index, indexedItem);
+            mapForReduce(indexedItem);
             if (!remainingInputs.containsKey(index)) {
                 remainingInputs.put(index, inputs.length - 1);
             } else {
@@ -69,7 +77,7 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                     remainingInputs.remove(index);
                     remainingInputs.notifyAll();
                     push = true;
-                    modified = modifiedInputs.remove(index);
+                    next = reduce(index);
                 } else {
                     remainingInputs.put(index, remaining - 1);
                 }
@@ -81,7 +89,23 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                 return;
             }
         }
-        output.push(modified != null ? modified : indexedItem);
+        output.push(next != null ? next : indexedItem);
+    }
+
+    private void mapForReduce(IndexedItem<I> indexedItem) {
+        if (reducer == null) {
+            if (indexedItem.isModified())
+                modifiedInputs.put(indexedItem.getIndex(), indexedItem);
+        } else {
+            allInputs.computeIfAbsent(indexedItem.getIndex(), i -> new ArrayList<>()).add(indexedItem);
+        }
+    }
+
+    private IndexedItem<I> reduce(long index) {
+        if (reducer == null)
+            return modifiedInputs.remove(index);
+        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::getItem)
+                .collect(Collectors.toList())), true);
     }
 
     @Override
