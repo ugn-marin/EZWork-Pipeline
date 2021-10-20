@@ -20,7 +20,12 @@ abstract class PipeConnector extends PipelineWorker {
     }
 
     @Override
+    protected String getName() {
+        return super.getName().toLowerCase();
+    }
+
+    @Override
     public String toString() {
-        return getName().toLowerCase();
+        return getName();
     }
 }
