@@ -10,21 +10,16 @@ import java.util.stream.Collectors;
  * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
  * meaning that an item is only pushed once it was received from all input pipes. For that reason, all input pipes must
  * be <b>in the same index scope</b>.<br>
- * The item pushed into the output pipe is reduced by the following logic:<br>
- * 1. If a reducer was provided, the item is reduced from all items received for the particular index.<br>
- * 2. If a reducer was not provided, and any of the input items with a given index is marked modified, the last modified
- * item is pushed.<br>
- * 3. For other cases (no reducer provided or no items modified), the last item received for the particular index is
- * pushed.
+ * The item pushed into the output pipe for every index is computed by the reducer provided, or if wasn't provided, the
+ * last item for every index is pushed.
  * @param <I> The items type.
  */
 final class Join<I> extends PipeConnector implements OutputWorker<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
     private final Reducer<I> reducer;
+    private final Map<Long, List<IndexedItem<I>>> allInputs;
     private final Map<Long, Integer> remainingInputs;
-    private Map<Long, IndexedItem<I>> modifiedInputs;
-    private Map<Long, List<IndexedItem<I>>> allInputs;
 
     @SafeVarargs
     Join(Reducer<I> reducer, Pipe<I> output, Pipe<I>... inputs) {
@@ -35,12 +30,9 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
             throw new PipelineConfigurationException("Joining different index scopes.");
         this.inputs = inputs;
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
-        this.reducer = reducer;
+        this.reducer = Objects.requireNonNullElse(reducer, Sugar::last);
+        allInputs = new HashMap<>(inputs.length);
         remainingInputs = new HashMap<>(inputs.length);
-        if (reducer == null)
-            modifiedInputs = new HashMap<>(inputs.length);
-        else
-            allInputs = new HashMap<>(inputs.length);
     }
 
     Pipe<I>[] getInputs() {
@@ -68,7 +60,7 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
         boolean push = false;
         IndexedItem<I> next = null;
         synchronized (remainingInputs) {
-            mapForReduce(indexedItem);
+            allInputs.computeIfAbsent(indexedItem.getIndex(), i -> new ArrayList<>()).add(indexedItem);
             if (!remainingInputs.containsKey(index)) {
                 remainingInputs.put(index, inputs.length - 1);
             } else {
@@ -77,7 +69,8 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                     remainingInputs.remove(index);
                     remainingInputs.notifyAll();
                     push = true;
-                    next = reduce(index);
+                    next = new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream()
+                            .map(IndexedItem::getItem).collect(Collectors.toList())));
                 } else {
                     remainingInputs.put(index, remaining - 1);
                 }
@@ -89,23 +82,7 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                 return;
             }
         }
-        output.push(next != null ? next : indexedItem);
-    }
-
-    private void mapForReduce(IndexedItem<I> indexedItem) {
-        if (reducer == null) {
-            if (indexedItem.isModified())
-                modifiedInputs.put(indexedItem.getIndex(), indexedItem);
-        } else {
-            allInputs.computeIfAbsent(indexedItem.getIndex(), i -> new ArrayList<>()).add(indexedItem);
-        }
-    }
-
-    private IndexedItem<I> reduce(long index) {
-        if (reducer == null)
-            return modifiedInputs.remove(index);
-        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::getItem)
-                .collect(Collectors.toList())), true);
+        output.push(next);
     }
 
     @Override
