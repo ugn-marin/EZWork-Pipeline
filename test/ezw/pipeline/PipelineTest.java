@@ -59,14 +59,6 @@ public class PipelineTest {
         sleep(min + random.nextInt(max - min));
     }
 
-    private static String switchCase(String text) {
-        StringBuilder sb = new StringBuilder();
-        for (char c : text.toCharArray()) {
-            sb.append(Character.isLowerCase(c) ? Character.toUpperCase(c) : Character.toLowerCase(c));
-        }
-        return sb.toString();
-    }
-
     private static void validate(Pipeline<?> pipeline) {
         System.out.println(pipeline);
         assertTrue(pipeline.getWarnings().isEmpty(), "Warnings found");
@@ -551,7 +543,7 @@ public class PipelineTest {
         validate(pipeline);
         assertEquals(4, pipeline.getWorkersConcurrency());
         pipeline.run();
-        assertEquals(switchCase(full), charAccumulator.getValue());
+        assertEquals(full.toLowerCase(), charAccumulator.getValue().toLowerCase());
         bottlenecks(pipeline);
     }
 
@@ -586,7 +578,7 @@ public class PipelineTest {
         validate(pipeline);
         assertEquals(8, pipeline.getWorkersConcurrency());
         pipeline.run();
-        assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(five.toLowerCase(), charAccumulator.getValue().toLowerCase());
         assertEquals(five.length(), supplyPipe.getItemsPushed());
         assertEquals(five.length(), upper.getItemsPushed());
         assertEquals(five.length(), lower.getItemsPushed());
@@ -643,7 +635,7 @@ public class PipelineTest {
         assertEquals(9, pipeline.getWorkersConcurrency());
         pipeline.run();
         // Join prefers modified - here different case
-        assertEquals(switchCase(five), charAccumulator.getValue());
+        assertEquals(five.toLowerCase(), charAccumulator.getValue().toLowerCase());
         assertEquals(0, pipeline.getCancelledWork());
         assertEquals(five.length(), supplyPipe.getItemsPushed());
         assertEquals(five.length(), upper.getItemsPushed());
@@ -914,6 +906,28 @@ public class PipelineTest {
         assertEquals("-".repeat(12), accum.getValue());
         assertEquals(12, supplyPipe.getItemsPushed());
         assertEquals(0, pipeline.getCancelledWork());
+        bottlenecks(pipeline);
+    }
+
+    @Test
+    void join_reduce() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
+        CharSupplier charSupplier = new CharSupplier(full, supplyPipe, 1);
+        Pipe<Character> toLetters = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toDigits = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> letters = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> digitsP = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> reduced = new IndexedPipe<>(mediumCapacity);
+        CharAccumulator charAccumulator = new CharAccumulator(reduced, 1);
+        var fl = Pipelines.function(toLetters, letters, c -> Character.isLetter(c) ? c : ' ');
+        var fd = Pipelines.function(toDigits, digitsP, 3, c -> Character.isDigit(c) ? c : ' ');
+        var pipeline = Pipeline.from(charSupplier).fork(supplyPipe, toLetters, toDigits).through(
+                fl, fd).join(chars -> chars.stream().filter(Character::isLetter).findFirst().orElse('.'),
+                charAccumulator, fl, fd).into(charAccumulator).build();
+        validate(pipeline);
+        pipeline.run();
+        assertEquals(Sugar.replace(full, " ", ".", ",", ".", ":", ".", "-", ".", digits, ".".repeat(10)),
+                charAccumulator.getValue());
         bottlenecks(pipeline);
     }
 
@@ -1243,7 +1257,6 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
-        assertNotEquals(full, joinedAccum.getValue());
         bottlenecks(pipeline);
     }
 

@@ -52,7 +52,7 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
         for (var indexedItem : input) {
             long index = indexedItem.getIndex();
             I item = indexedItem.getItem();
-            submit(() -> output.push(new IndexedItem<>(index, apply(item), item)));
+            submit(() -> output.push(new IndexedItem<>(index, apply(item))));
         }
     }
 
