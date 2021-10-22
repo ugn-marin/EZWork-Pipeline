@@ -65,15 +65,11 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
                 remainingInputs.put(index, inputs.length - 1);
             } else {
                 int remaining = remainingInputs.get(index);
-                if (remaining == 1) {
-                    remainingInputs.remove(index);
-                    remainingInputs.notifyAll();
-                    push = true;
-                    next = new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream()
-                            .map(IndexedItem::getItem).collect(Collectors.toList())));
-                } else {
+                push = remaining == 1;
+                if (push)
+                    next = getNext(index);
+                else
                     remainingInputs.put(index, remaining - 1);
-                }
             }
             if (!push) {
                 while (remainingInputs.containsKey(index)) {
@@ -85,8 +81,20 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
         output.push(next);
     }
 
+    private IndexedItem<I> getNext(long index) {
+        remainingInputs.remove(index);
+        remainingInputs.notifyAll();
+        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::getItem)
+                .collect(Collectors.toList())));
+    }
+
     @Override
     void internalClose() {
         output.setEndOfInput();
+        synchronized (remainingInputs) {
+            allInputs.clear();
+            remainingInputs.clear();
+            remainingInputs.notifyAll();
+        }
     }
 }
