@@ -1246,7 +1246,7 @@ public class PipelineTest {
         var f = Pipelines.function(supplied1, supplied1f, Character::toUpperCase);
         var a = Pipelines.action(supplied3, supplied3a, 6, (Consumer<Character>) Interruptible::sleep);
         builder.through(f, a);
-        var words = new SupplyPipe<String>(mediumCapacity, word -> word.length() < 3);
+        var words = new SupplyPipe<String>(smallCapacity, word -> word.length() < 3);
         var wordsTrans = new WordsTransformer(supplied4, words);
         builder.through(wordsTrans);
         var joined = new IndexedPipe<Character>(minimumCapacity);
@@ -1257,6 +1257,12 @@ public class PipelineTest {
         validate(pipeline);
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
+        assertEquals("Pipeline of 6 workers on 11 working threads:\n" +
+                "CharSupplier -<SP:10>- fork +<IP:11>- F ----------------<IP:21>-+ join ----<IP:1>- CharAccumulator\n" +
+                "                            +<IP:12>----------------------------+\n" +
+                "                            +<IP:13>- A[6] -------------<IP:31>-+\n" +
+                "                            +<IP:14>- WordsTransformer -<S?P:10>- Printer",
+                pipeline.toString().replace(System.lineSeparator(), "\n"));
         bottlenecks(pipeline);
     }
 
