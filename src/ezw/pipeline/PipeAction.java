@@ -5,7 +5,8 @@ import ezw.function.UnsafeConsumer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A pipe function acting upon items from an input pipe, and passing them to an output pipe as soon as done.
+ * A pipe function acting upon items from an input pipe, and passing them to an output pipe as soon as done. Essentially
+ * an identity function with a side effect.
  * @param <I> The items type.
  */
 public abstract class PipeAction<I> extends PipeFunction<I, I> implements UnsafeConsumer<I> {
