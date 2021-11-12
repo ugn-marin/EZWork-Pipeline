@@ -46,8 +46,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         oneShot.check("The pipeline worker instance cannot be reused.");
         interceptThrowable(() -> {
             work();
-            if (executorService.isCalculated())
-                Concurrent.join(executorService.get());
+            executorService.maybe(pool -> Interruptible.run(() -> Concurrent.join(pool)));
         }, () -> interceptThrowable(this::close, () -> interceptThrowable(this::internalClose, () -> {
             latch.release();
             Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
