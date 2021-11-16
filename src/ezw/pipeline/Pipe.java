@@ -171,6 +171,10 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
         }
     }
 
+    void drain() {
+        iterator.forEachRemaining(i -> {});
+    }
+
     @Override
     public Iterator<IndexedItem<I>> iterator() {
         return iterator;
