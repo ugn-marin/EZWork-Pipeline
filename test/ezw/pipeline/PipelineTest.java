@@ -842,6 +842,16 @@ public class PipelineTest {
     }
 
     @Test
+    void supplier1_transformer1_drain() throws Exception {
+        var supplier = new CharSupplier(five, new SupplyPipe<>(smallCapacity), 1);
+        var transformer = new WordsTransformer(supplier.getOutput(), new SupplyPipe<>(1), 1);
+        var pipeline = Pipeline.from(supplier).through(transformer).into(transformer.drain()).build();
+        validate(pipeline);
+        pipeline.run();
+        bottlenecks(pipeline);
+    }
+
+    @Test
     void conditional_function() throws Exception {
         var supplier = new CharSupplier(full, new SupplyPipe<>(minimumCapacity), 1);
         var function = Pipelines.function(supplier.getOutput(),
