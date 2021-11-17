@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class PipelineWorker implements UnsafeRunnable {
     private static final AtomicInteger workerThreadNumber = new AtomicInteger();
 
+    private final boolean internal;
     private final int concurrency;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
@@ -23,18 +24,23 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final AtomicInteger cancelledWork = new AtomicInteger();
     private Throwable throwable;
 
-    PipelineWorker(int concurrency) {
+    PipelineWorker(boolean internal, int concurrency) {
+        this.internal = internal;
         this.concurrency = concurrency;
         executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
                 String.format("PW %d (%s)", workerThreadNumber.incrementAndGet(), getName()))));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 
+    boolean isInternal() {
+        return internal;
+    }
+
     /**
      * Returns the concurrency level of the worker.
      */
     protected int getConcurrency() {
-        return concurrency;
+        return internal ? 0 : concurrency;
     }
 
     /**
@@ -138,7 +144,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * only reached after the execution returns or throws an exception.
      */
     public int getCancelledWork() {
-        return cancelledWork.get();
+        return internal ? 0 : cancelledWork.get();
     }
 
     /**
@@ -168,13 +174,15 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         }
         if (simpleName.length() > 5 && clazz.getPackage().equals(PipelineWorker.class.getPackage()))
             simpleName = String.valueOf(simpleName.toCharArray()[4]);
+        else if (internal)
+            simpleName = simpleName.toLowerCase();
         return simpleName;
     }
 
     @Override
     public String toString() {
         String string = getName();
-        if (getConcurrency() != 1)
+        if (!internal && getConcurrency() != 1)
             string += String.format("[%d]", getConcurrency());
         return string;
     }

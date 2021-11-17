@@ -7,12 +7,7 @@ package ezw.pipeline;
 class PipeDrain<I> extends PipeConsumer<I> {
 
     PipeDrain(Pipe<I> input) {
-        super(input);
-    }
-
-    @Override
-    protected int getConcurrency() {
-        return 0;
+        super(true, input, 1);
     }
 
     @Override
@@ -26,10 +21,5 @@ class PipeDrain<I> extends PipeConsumer<I> {
     @Override
     protected String getName() {
         return "X";
-    }
-
-    @Override
-    public String toString() {
-        return getName();
     }
 }

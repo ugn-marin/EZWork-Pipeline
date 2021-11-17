@@ -23,7 +23,12 @@ public enum PipelineWarning {
      * Indicates that a pipe is used in different levels of the flow, creating a potential cycle. This will probably
      * make the pipeline not work properly.
      */
-    CYCLE("Cycle detected.");
+    CYCLE("Cycle detected."),
+    /**
+     * Having a fork where the output pipes vary in base capacity may cause the smallest one(s) to become a bottleneck,
+     * as the larger ones may never fill up.
+     */
+    UNBALANCED_FORK("Unbalanced fork exists.");
 
     private final String description;
 

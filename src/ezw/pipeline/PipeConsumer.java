@@ -26,7 +26,11 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
      * @param concurrency The maximum parallel items consuming to allow.
      */
     public PipeConsumer(Pipe<I> input, int concurrency) {
-        super(Sugar.requireRange(concurrency, 1, null));
+        this(false, input, Sugar.requireRange(concurrency, 1, null));
+    }
+
+    PipeConsumer(boolean internal, Pipe<I> input, int concurrency) {
+        super(internal, concurrency);
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
     }
 

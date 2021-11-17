@@ -27,7 +27,7 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
      * @param concurrency The maximum parallel items supplying to allow.
      */
     public PipeSupplier(SupplyPipe<O> output, int concurrency) {
-        super(Sugar.requireRange(concurrency, 1, null));
+        super(false, Sugar.requireRange(concurrency, 1, null));
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
 

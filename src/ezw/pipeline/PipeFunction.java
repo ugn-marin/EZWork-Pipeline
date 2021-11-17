@@ -32,7 +32,7 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
      * @param concurrency The maximum parallel items applying to allow.
      */
     public PipeFunction(Pipe<I> input, Pipe<O> output, int concurrency) {
-        super(Sugar.requireRange(concurrency, 1, null));
+        super(false, Sugar.requireRange(concurrency, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }
