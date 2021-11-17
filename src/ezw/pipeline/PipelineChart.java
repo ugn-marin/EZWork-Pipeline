@@ -6,6 +6,7 @@ import ezw.data.Matrix;
 import ezw.data.Range;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
@@ -64,6 +65,9 @@ class PipelineChart {
             }
         }));
         forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
+        if (forks.stream().anyMatch(f -> Arrays.stream(f.getOutputs()).map(Pipe::getBaseCapacity)
+                .collect(Collectors.toSet()).size() > 1))
+            warnings.add(PipelineWarning.UNBALANCED_FORK);
         joins = Sugar.instancesOf(pipelineWorkers, Join.class);
     }
 

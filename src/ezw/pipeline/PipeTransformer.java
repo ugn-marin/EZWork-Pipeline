@@ -34,7 +34,7 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
      * @param concurrency The maximum parallel items transforming to allow.
      */
     public PipeTransformer(Pipe<I> input, SupplyPipe<O> output, int concurrency) {
-        super(Sugar.requireRange(concurrency, 1, null));
+        super(false, Sugar.requireRange(concurrency, 1, null));
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
         this.output = Objects.requireNonNull(output, "Output pipe is required.");
     }

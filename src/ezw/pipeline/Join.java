@@ -7,14 +7,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A pipe connector joining input items from several pipes into one output pipe. Join is a barrier for each index,
+ * An internal worker joining input items from several pipes into one output pipe. Join is a barrier for each index,
  * meaning that an item is only pushed once it was received from all input pipes. For that reason, all input pipes must
  * be <b>in the same index scope</b>.<br>
  * The item pushed into the output pipe for every index is computed by the reducer provided, or if wasn't provided, the
  * last item for every index is pushed.
  * @param <I> The items type.
  */
-final class Join<I> extends PipeConnector implements OutputWorker<I> {
+final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
     private final Reducer<I> reducer;
@@ -23,7 +23,7 @@ final class Join<I> extends PipeConnector implements OutputWorker<I> {
 
     @SafeVarargs
     Join(Reducer<I> reducer, Pipe<I> output, Pipe<I>... inputs) {
-        super(Sugar.requireNoneNull(inputs).length);
+        super(true, Sugar.requireNoneNull(inputs).length);
         if (inputs.length < 2)
             throw new PipelineConfigurationException("Join requires at least 2 input pipes.");
         if (!Sugar.instancesOf(List.of(inputs), SupplyGate.class).isEmpty())

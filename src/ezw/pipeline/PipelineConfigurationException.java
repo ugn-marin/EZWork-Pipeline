@@ -13,8 +13,8 @@ public class PipelineConfigurationException extends RuntimeException {
         super(message);
     }
 
-    PipelineConfigurationException(Set<PipelineWarning> pipelineWarnings) {
-        this(describeWarnings(pipelineWarnings));
+    PipelineConfigurationException(Set<PipelineWarning> pipelineWarnings, String toString) {
+        this(describeWarnings(pipelineWarnings) + System.lineSeparator() + toString);
         this.pipelineWarnings = pipelineWarnings;
     }
 

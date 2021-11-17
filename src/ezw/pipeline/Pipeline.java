@@ -42,20 +42,20 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     private Pipeline(List<PipelineWorker> pipelineWorkers, SupplyPipe<S> supplyPipe,
                      Set<PipelineWarning> allowedWarnings) {
-        super(pipelineWorkers.size());
+        super(true, pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
-        int connectorsCount = Sugar.instancesOf(pipelineWorkers, PipeConnector.class).size();
+        int internal = (int) pipelineWorkers.stream().filter(PipelineWorker::isInternal).count();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size() - connectorsCount, getWorkersConcurrency()));
+                "Open pipeline" : "Pipeline", pipelineWorkers.size() - internal, getConcurrency()));
         var pipelineChart = new PipelineChart(pipelineWorkers, supplyPipe);
         sb.append(pipelineChart);
         pipelineWarnings = pipelineChart.getWarnings();
         var unexpectedWarnings = pipelineWarnings.stream().filter(Predicate.not(allowedWarnings::contains))
                 .collect(Collectors.toSet());
         if (!unexpectedWarnings.isEmpty())
-            throw new PipelineConfigurationException(unexpectedWarnings);
+            throw new PipelineConfigurationException(unexpectedWarnings, sb.toString());
         for (var warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
@@ -64,9 +64,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     /**
      * Returns the maximum number of auto-allocated threads that this pipeline's workers can use. That doesn't include
-     * the threads managing and joining the workers, and the various pipe connectors.
+     * the threads managing and joining the workers, and the various internal workers.
      */
-    public int getWorkersConcurrency() {
+    @Override
+    public int getConcurrency() {
         return pipelineWorkers.stream().mapToInt(PipelineWorker::getConcurrency).sum();
     }
 
@@ -123,7 +124,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public Set<InputWorker<?>> getBottlenecks() {
         return Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
-                .filter(iw -> !(iw instanceof PipeConnector) && iw.getInput().getAverageLoad() > 0.9)
+                .filter(iw -> !((PipelineWorker) iw).isInternal() && iw.getInput().getAverageLoad() > 0.9)
                 .collect(Collectors.toSet());
     }
 
