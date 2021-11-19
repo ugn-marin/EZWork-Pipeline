@@ -92,6 +92,17 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         supplyPipe.push(item);
     }
 
+    /**
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The pipeline
+     * will not throw an exception as a result of this operation. Equivalent to:
+     * <pre>
+     * cancel(null);
+     * </pre>
+     */
+    public void stop() {
+        cancel(null);
+    }
+
     @Override
     void internalClose() {
         setEndOfInput();
