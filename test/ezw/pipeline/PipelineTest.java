@@ -1273,7 +1273,7 @@ public class PipelineTest {
                 "                            +<IP:12>----------------------------+\n" +
                 "                            +<IP:13>- A[6] -------------<IP:31>-+\n" +
                 "                            +<IP:14>- WordsTransformer -<S?P:10>- Printer\n" +
-                "Warning: Unbalanced fork exists.",
+                "Warning: Unbalanced fork detected.",
                 pipeline.toString().replace(System.lineSeparator(), "\n"));
         bottlenecks(pipeline);
     }
