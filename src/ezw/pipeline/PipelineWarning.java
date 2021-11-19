@@ -28,7 +28,7 @@ public enum PipelineWarning {
      * Having a fork where the output pipes vary in base capacity may cause the smallest one(s) to become a bottleneck,
      * as the larger ones may never fill up.
      */
-    UNBALANCED_FORK("Unbalanced fork exists.");
+    UNBALANCED_FORK("Unbalanced fork detected.");
 
     private final String description;
 
