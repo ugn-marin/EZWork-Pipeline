@@ -701,6 +701,36 @@ public class PipelineTest {
     }
 
     @Test
+    void supplier1_large_fork_accumulator2slow_print_cancel_printer() throws Exception {
+        SupplyPipe<Character> supplyPipe = new SupplyPipe<>(largeCapacity);
+        CharSupplier charSupplier = new CharSupplier(five, supplyPipe, 1);
+        Pipe<Character> toAccum = new IndexedPipe<>(smallCapacity);
+        Pipe<Character> toPrint = new IndexedPipe<>(smallCapacity);
+        CharAccumulator charAccumulator = new CharAccumulator(toAccum, 2) {
+            @Override
+            public void accept(Character item) throws InterruptedException {
+                sleepBetween(100, 500);
+                super.accept(item);
+            }
+        };
+        var printer = new Printer<>(System.out, toPrint, 1);
+        var pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
+        System.out.println(pipeline);
+        Concurrent.run(() -> {
+            sleep(600);
+            printer.cancel(new NumberFormatException("My cancellation message"));
+        });
+        try {
+            pipeline.run();
+            fail("Not cancelled");
+        } catch (NumberFormatException e) {
+            assertEquals("My cancellation message", e.getMessage());
+        }
+        assertTrue(pipeline.getCancelledWork() > 0);
+        bottlenecks(pipeline);
+    }
+
+    @Test
     void fail_before_await() throws InterruptedException {
         var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
         var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, i -> {

@@ -109,8 +109,11 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     }
 
     /**
-     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop.
-     * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage.
+     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. Cancelling a
+     * worker in a pipeline is equivalent to cancelling the pipeline or the worker failing with the provided throwable.
+     * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage. Note that
+     *                  cancelling a worker (not a pipeline) with a null may cause dependent workers and indeed the
+     *                  entire pipeline to hang. To stop the pipeline use the <code>stop</code> method.
      */
     public void cancel(Throwable throwable) {
         setThrowable(throwable);
@@ -126,17 +129,6 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      */
     public void interrupt() {
         cancel(new InterruptedException("Controlled interruption."));
-    }
-
-    /**
-     * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The worker
-     * will not throw an exception as a result of this operation. Equivalent to:
-     * <pre>
-     * cancel(null);
-     * </pre>
-     */
-    public void stop() {
-        cancel(null);
     }
 
     /**
