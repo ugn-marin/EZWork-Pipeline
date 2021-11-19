@@ -334,7 +334,7 @@ public class PipelineTest {
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(10, 20);
+                sleepBetween(2, 6);
                 super.accept(item);
             }
         };
@@ -439,14 +439,14 @@ public class PipelineTest {
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
             @Override
             public Character get() throws InterruptedException {
-                sleepBetween(1, 10);
+                sleepBetween(1, 5);
                 return super.get();
             }
         };
         CharAccumulator charAccumulator = new CharAccumulator(supplyPipe, 10) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(1, 10);
+                sleepBetween(1, 5);
                 super.accept(item);
             }
         };
@@ -1027,21 +1027,21 @@ public class PipelineTest {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(minimumCapacity), 1) {
             @Override
             public Character get() throws InterruptedException {
-                sleepBetween(1, 300);
+                sleepBetween(1, 10);
                 return super.get();
             }
         };
         var accum1 = new CharAccumulator(new SupplyPipe<>(minimumCapacity, c -> c == '-'), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(1, 300);
+                sleepBetween(1, 10);
                 super.accept(item);
             }
         };
         var accum2 = new CharAccumulator(new SupplyPipe<>(smallCapacity, c -> c != '-'), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(1, 300);
+                sleepBetween(1, 10);
                 super.accept(item);
             }
         };
@@ -1059,14 +1059,14 @@ public class PipelineTest {
         var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(1, 20);
+                sleepBetween(1, 2);
                 super.accept(item);
             }
         };
         var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleepBetween(1, 50);
+                sleepBetween(1, 5);
                 super.accept(item);
             }
         };
@@ -1120,14 +1120,14 @@ public class PipelineTest {
         var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 10) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleep(2000);
+                sleep(200);
                 super.accept(item);
             }
         };
         var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 10) {
             @Override
             public void accept(Character item) throws InterruptedException {
-                sleep(2000);
+                sleep(200);
                 super.accept(item);
             }
         };
@@ -1137,7 +1137,7 @@ public class PipelineTest {
             for (char c : full.toCharArray()) {
                 pipeline.push(c);
             }
-            sleep(1000);
+            sleep(100);
             pipeline.stop();
         });
         assertEquals(20, pipeline.getConcurrency());
@@ -1227,11 +1227,12 @@ public class PipelineTest {
     void pipe_throughput() throws Exception {
         int concurrency = 8;
         var supplyPipe = new SupplyPipe<Integer>(smallCapacity);
-        var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, concurrency, i -> {})).build();
+        var pipeline = Pipeline.from(supplyPipe).into(Pipelines.consumer(supplyPipe, concurrency,
+                i -> Interruptible.sleep(0))).build();
         System.out.println(pipeline);
         Concurrent.run(pipeline);
         var tasks = Sugar.fill(concurrency, () -> (UnsafeRunnable) () -> {
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 10000; i++) {
                 pipeline.push(i);
             }
         });
