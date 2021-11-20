@@ -12,6 +12,11 @@ public enum PipelineWarning {
      */
     DISCOVERY("Not all workers are discoverable."),
     /**
+     * Indicates that a pipe is used in different levels of the flow, creating a potential cycle. This will probably
+     * make the pipeline not work properly.
+     */
+    CYCLE("Cycle detected."),
+    /**
      * Indicates that one or more pipes is used as an output for more than one worker. For instance, several suppliers.
      * This structure is supported, but has the danger of failing one of the workers on <i>Attempting to push into pipe
      * after end of input</i>. If the suppliers might not run infinitely, make sure to override the workers'
@@ -19,11 +24,6 @@ public enum PipelineWarning {
      * in a race condition between the relevant workers.
      */
     MULTIPLE_INPUTS("Multiple workers push into the same pipe."),
-    /**
-     * Indicates that a pipe is used in different levels of the flow, creating a potential cycle. This will probably
-     * make the pipeline not work properly.
-     */
-    CYCLE("Cycle detected."),
     /**
      * Having a fork where the output pipes vary in base capacity may cause the smallest one(s) to become a bottleneck,
      * as the larger ones may never fill up.
