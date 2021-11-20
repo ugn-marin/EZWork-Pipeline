@@ -7,7 +7,7 @@ package ezw.pipeline;
 class PipeDrain<I> extends PipeConsumer<I> {
 
     PipeDrain(Pipe<I> input) {
-        super(true, input, 1);
+        super(true, input, 0);
     }
 
     @Override
