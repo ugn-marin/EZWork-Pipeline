@@ -5,6 +5,8 @@ import ezw.concurrent.*;
 import ezw.flow.OneShot;
 import ezw.function.UnsafeRunnable;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An unsafe runnable executing in a pipeline.
  */
 public abstract class PipelineWorker implements UnsafeRunnable {
-    private static final AtomicInteger workerThreadNumber = new AtomicInteger();
+    private static final AtomicInteger workerPoolNumber = new AtomicInteger();
 
     private final boolean internal;
     private final int concurrency;
@@ -28,7 +30,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         this.internal = internal;
         this.concurrency = concurrency;
         executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
-                String.format("PW %d (%s)", workerThreadNumber.incrementAndGet(), getName()))));
+                String.format("PW %d (%s)", workerPoolNumber.incrementAndGet(), getName()))));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
     }
 
@@ -50,23 +52,31 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public void run() throws Exception {
         oneShot.check("The pipeline worker instance cannot be reused.");
-        interceptThrowable(() -> {
-            work();
-            executorService.maybe(es -> Interruptible.run(() -> Concurrent.join(es)));
-        }, () -> interceptThrowable(this::close, () -> interceptThrowable(this::internalClose, () -> {
-            executorService.maybe(ExecutorService::shutdown);
-            latch.release();
-            Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
-        })));
+        runSteps(List.<UnsafeRunnable>of(() -> {
+                    work();
+                    executorService.maybe(es -> Interruptible.run(() -> Concurrent.join(es)));
+                },
+                this::close,
+                this::internalClose,
+                () -> executorService.maybe(ExecutorService::shutdown),
+                () -> {
+                    latch.release();
+                    Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
+                }).iterator());
     }
 
-    private void interceptThrowable(UnsafeRunnable run, UnsafeRunnable close) throws Exception {
-        try {
-            run.run();
-        } catch (Throwable t) {
-            setThrowable(t);
-        } finally {
-            close.run();
+    private void runSteps(Iterator<UnsafeRunnable> steps) throws Exception {
+        var step = steps.next();
+        if (!steps.hasNext()) {
+            step.run();
+        } else {
+            try {
+                step.run();
+            } catch (Throwable t) {
+                setThrowable(t);
+            } finally {
+                runSteps(steps);
+            }
         }
     }
 
