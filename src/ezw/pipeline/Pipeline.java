@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
     private final SupplyPipe<S> supplyPipe;
+    private final boolean isOpen;
     private final Set<PipelineWarning> pipelineWarnings;
     private final String toString;
 
@@ -45,7 +46,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         super(true, pipelineWorkers.size());
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
-        boolean isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
+        isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
         int internal = (int) pipelineWorkers.stream().filter(PipelineWorker::isInternal).count();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
                 "Open pipeline" : "Pipeline", pipelineWorkers.size() - internal, getConcurrency()));
@@ -105,7 +106,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     @Override
     void internalClose() {
-        setEndOfInput();
+        if (isOpen)
+            setEndOfInput();
         pipelineWorkers.forEach(pipelineWorker -> pipelineWorker.cancel(getThrowable()));
         Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream().map(InputWorker::getInput)
                 .forEach(Pipe::clear);
