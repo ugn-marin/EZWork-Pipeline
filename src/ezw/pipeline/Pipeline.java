@@ -319,7 +319,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          * @return The ready builder.
          */
         public ReadyBuilder<S> into(PipeConsumer<?>... pipeConsumers) {
-            oneShot.check("The pipeline ready builder can be produced only once.");
+            oneShot.check("The pipeline ready builder can be produced only once by a builder instance.");
             return new ReadyBuilder<>(attach(pipeConsumers).pipelineWorkers, supplyPipe);
         }
 
@@ -350,7 +350,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
          * @throws PipelineConfigurationException If got pipeline warnings not listed in <code>allowedWarnings</code>.
          */
         public Pipeline<S> build(PipelineWarning... allowedWarnings) {
-            oneShot.check("The pipeline can be produced only once.");
+            oneShot.check("The pipeline can be produced only once by a ready builder instance.");
             return new Pipeline<>(pipelineWorkers, supplyPipe, Set.of(allowedWarnings));
         }
     }

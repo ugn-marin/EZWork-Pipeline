@@ -162,10 +162,10 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     }
 
     void drain() {
-        drain(i -> {});
+        forEachRemaining(i -> {});
     }
 
-    void drain(Consumer<IndexedItem<I>> action) {
+    void forEachRemaining(Consumer<IndexedItem<I>> action) {
         iterator.forEachRemaining(action);
     }
 
