@@ -23,7 +23,7 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
     }
 
     /**
-     * Constructs a multi-threaded supplier.
+     * Constructs a multithreaded supplier.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items supplying to allow.
      */

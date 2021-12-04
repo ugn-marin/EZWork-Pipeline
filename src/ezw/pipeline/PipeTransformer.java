@@ -28,7 +28,7 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
     }
 
     /**
-     * Constructs a multi-threaded transformer.
+     * Constructs a multithreaded transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items transforming to allow.
@@ -51,9 +51,7 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
 
     @Override
     protected void work() {
-        for (var indexedItem : input) {
-            submit(() -> push(apply(indexedItem.getItem())));
-        }
+        input.forEachRemaining(indexedItem -> submit(() -> push(apply(indexedItem.getItem()))));
         submit(() -> push(getLastItems()));
     }
 

@@ -16,7 +16,7 @@ class PipeDrain<I> extends PipeConsumer<I> {
     }
 
     @Override
-    public void accept(I item) throws Exception {}
+    public void accept(I item) {}
 
     @Override
     protected String getName() {

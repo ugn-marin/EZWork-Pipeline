@@ -22,7 +22,7 @@ public abstract class PipeAction<I> extends PipeFunction<I, I> implements Unsafe
     }
 
     /**
-     * Constructs a multi-threaded action.
+     * Constructs a multithreaded action.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items accepting to allow.
