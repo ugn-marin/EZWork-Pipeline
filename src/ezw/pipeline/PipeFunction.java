@@ -26,7 +26,7 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
     }
 
     /**
-     * Constructs a multi-threaded function.
+     * Constructs a multithreaded function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items applying to allow.
@@ -49,11 +49,8 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
 
     @Override
     protected void work() {
-        for (var indexedItem : input) {
-            long index = indexedItem.getIndex();
-            I item = indexedItem.getItem();
-            submit(() -> output.push(new IndexedItem<>(index, apply(item))));
-        }
+        input.drain(indexedItem -> submit(() -> output.push(new IndexedItem<>(indexedItem.getIndex(),
+                apply(indexedItem.getItem())))));
     }
 
     /**

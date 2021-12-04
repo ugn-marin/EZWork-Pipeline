@@ -13,6 +13,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * A queue of items moved between pipeline workers.
@@ -160,6 +161,14 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
         endOfInput = true;
     }
 
+    void drain() {
+        drain(i -> {});
+    }
+
+    void drain(Consumer<IndexedItem<I>> action) {
+        iterator.forEachRemaining(action);
+    }
+
     void clear() {
         for (int i = 0; totalItems() > 0; i++) {
             final int waitTime = i * 10 + 1;
@@ -169,10 +178,6 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
             inOrderQueue.clear();
             outOfOrderItems.clear();
         }
-    }
-
-    void drain() {
-        iterator.forEachRemaining(i -> {});
     }
 
     @Override

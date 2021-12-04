@@ -57,7 +57,7 @@ public abstract class Pipelines {
 
     /**
      * Constructs a pipeline from a simple supplier of the non-null elements from the stream, into a simple
-     * multi-threaded consumer. Similar to (plus the pipeline functionality of cancellation, concurrency control etc.):
+     * multithreaded consumer. Similar to (plus the pipeline functionality of cancellation, concurrency control etc.):
      * <pre>
      * stream.filter(Objects::nonNull).parallel().forEach(accept);
      * </pre>
@@ -121,7 +121,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple supplier.
+     * Constructs a simple pipe supplier.
      * @param output The output pipe.
      * @param get The get implementation.
      * @param <O> The output items type.
@@ -132,7 +132,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded supplier.
+     * Constructs a simple multithreaded pipe supplier.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items supplying to allow.
      * @param get The get implementation.
@@ -151,7 +151,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple supplier of the non-null elements from the stream.
+     * Constructs a simple pipe supplier of the non-null elements from the stream.
      * @param output The output pipe.
      * @param stream The stream.
      * @param <O> The output items type.
@@ -163,7 +163,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a supplier of a single non-null object.
+     * Constructs a pipe supplier of a single non-null object.
      * @param object The object to supply.
      * @param <O> The object type.
      * @return The supplier.
@@ -173,7 +173,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple function.
+     * Constructs a simple pipe function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param apply The apply implementation.
@@ -186,7 +186,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded function.
+     * Constructs a simple multithreaded pipe function.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items applying to allow.
@@ -208,7 +208,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple action.
+     * Constructs a simple pipe action.
      * @param accept The accept implementation.
      * @param <I> The items type.
      * @return The action.
@@ -218,7 +218,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded action.
+     * Constructs a simple multithreaded pipe action.
      * @param concurrency The maximum parallel items accepting to allow.
      * @param accept The accept implementation.
      * @param <I>  The items type.
@@ -229,7 +229,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple action.
+     * Constructs a simple pipe action.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param accept The accept implementation.
@@ -241,7 +241,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded action.
+     * Constructs a simple multithreaded pipe action.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items accepting to allow.
@@ -261,7 +261,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple transformer.
+     * Constructs a simple pipe transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param apply The apply implementation.
@@ -277,7 +277,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded transformer.
+     * Constructs a simple multithreaded pipe transformer.
      * @param input The input pipe.
      * @param output The output pipe.
      * @param concurrency The maximum parallel items transforming to allow.
@@ -306,7 +306,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple consumer.
+     * Constructs a simple pipe consumer.
      * @param accept The accept implementation.
      * @param <I> The input items type.
      * @return The consumer.
@@ -316,7 +316,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded consumer.
+     * Constructs a simple multithreaded pipe consumer.
      * @param concurrency The maximum parallel items consuming to allow.
      * @param accept The accept implementation.
      * @param <I> The input items type.
@@ -327,7 +327,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple consumer.
+     * Constructs a simple pipe consumer.
      * @param input The input pipe.
      * @param accept The accept implementation.
      * @param <I> The input items type.
@@ -338,7 +338,7 @@ public abstract class Pipelines {
     }
 
     /**
-     * Constructs a simple multi-threaded consumer.
+     * Constructs a simple multithreaded pipe consumer.
      * @param input The input pipe.
      * @param concurrency The maximum parallel items consuming to allow.
      * @param accept The accept implementation.

@@ -21,7 +21,7 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
     }
 
     /**
-     * Constructs a multi-threaded consumer.
+     * Constructs a multithreaded consumer.
      * @param input The input pipe.
      * @param concurrency The maximum parallel items consuming to allow.
      */
@@ -41,9 +41,7 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
 
     @Override
     protected void work() {
-        for (var indexedItem : input) {
-            submit(() -> accept(indexedItem.getItem()));
-        }
+        input.drain(indexedItem -> submit(() -> accept(indexedItem.getItem())));
     }
 
     /**
