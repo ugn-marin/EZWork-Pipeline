@@ -8,10 +8,7 @@ import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -389,7 +386,7 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(smallCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 20) {
             @Override
-            public Character get() throws InterruptedException {
+            public Optional<Character> get() throws InterruptedException {
                 sleepBetween(1, 5);
                 return super.get();
             }
@@ -414,7 +411,7 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 10) {
             @Override
-            public Character get() throws InterruptedException {
+            public Optional<Character> get() throws InterruptedException {
                 sleepBetween(1, 5);
                 return super.get();
             }
@@ -438,7 +435,7 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(minimumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
             @Override
-            public Character get() throws InterruptedException {
+            public Optional<Character> get() throws InterruptedException {
                 sleepBetween(1, 5);
                 return super.get();
             }
@@ -462,7 +459,7 @@ public class PipelineTest {
         SupplyPipe<Character> supplyPipe = new SupplyPipe<>(mediumCapacity);
         CharSupplier charSupplier = new CharSupplier(five.repeat(5), supplyPipe, 32) {
             @Override
-            public Character get() throws InterruptedException {
+            public Optional<Character> get() throws InterruptedException {
                 sleepBetween(1, 10);
                 return super.get();
             }
@@ -1056,7 +1053,7 @@ public class PipelineTest {
     void conditional_fork_slow() throws Exception {
         var supplier = new CharSupplier(abc, new SupplyPipe<>(minimumCapacity), 1) {
             @Override
-            public Character get() throws InterruptedException {
+            public Optional<Character> get() throws InterruptedException {
                 sleepBetween(1, 10);
                 return super.get();
             }

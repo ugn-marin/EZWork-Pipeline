@@ -3,6 +3,7 @@ package ezw.pipeline.workers;
 import ezw.pipeline.PipeSupplier;
 import ezw.pipeline.SupplyPipe;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CharSupplier extends PipeSupplier<Character> {
@@ -15,11 +16,11 @@ public class CharSupplier extends PipeSupplier<Character> {
     }
 
     @Override
-    public Character get() throws InterruptedException {
+    public Optional<Character> get() throws InterruptedException {
         try {
-            return text.charAt(index.getAndIncrement());
+            return Optional.of(text.charAt(index.getAndIncrement()));
         } catch (StringIndexOutOfBoundsException e) {
-            return null;
+            return Optional.empty();
         }
     }
 }
