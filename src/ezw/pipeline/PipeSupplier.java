@@ -4,13 +4,13 @@ import ezw.Sugar;
 import ezw.function.UnsafeSupplier;
 
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.Optional;
 
 /**
  * A pipeline worker supplying items for a supply pipe.
  * @param <O> The output items type.
  */
-public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSupplier<O>, SupplyGate<O>,
+public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSupplier<Optional<O>>, SupplyGate<O>,
         OutputWorker<O> {
     private final SupplyPipe<O> output;
 
@@ -44,24 +44,15 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
 
     @Override
     protected void work() {
-        Sugar.repeat(getConcurrency(), () -> submit(() -> Sugar.acceptWhile(this::get, this::push,
-                Predicate.not(this::isTerminator))));
+        Sugar.repeat(getConcurrency(), () -> submit(() -> Sugar.acceptWhilePresent(this::get, this::push)));
     }
 
     /**
-     * Supplies an item for the output pipe.
-     * @return The next item to supply, or the terminator value if no more items available.
+     * Supplies an optional item for the output pipe.
+     * @return An optional of the next item to supply, or empty if no more items available.
      * @throws Exception An exception terminating the pipeline.
      */
-    public abstract O get() throws Exception;
-
-    /**
-     * Returns true if the item is the <i>terminator</i> value - a value signaling the end of input from the supplier.
-     * The terminator value is not pushed into the supply pipe. The default terminator value is null.
-     */
-    protected boolean isTerminator(O item) {
-        return item == null;
-    }
+    public abstract Optional<O> get() throws Exception;
 
     @Override
     void internalClose() {

@@ -59,24 +59,20 @@ public abstract class PipelineWorker implements UnsafeRunnable {
                 this::close,
                 this::internalClose,
                 () -> executorService.maybe(ExecutorService::shutdown),
-                () -> {
-                    latch.release();
-                    Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
-                }).iterator());
+                latch::release).iterator());
+        Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
     }
 
-    private void runSteps(Iterator<UnsafeRunnable> steps) throws Exception {
-        var step = steps.next();
+    private void runSteps(Iterator<UnsafeRunnable> steps) {
         if (!steps.hasNext()) {
-            step.run();
-        } else {
-            try {
-                step.run();
-            } catch (Throwable t) {
-                setThrowable(t);
-            } finally {
-                runSteps(steps);
-            }
+            return;
+        }
+        try {
+            steps.next().run();
+        } catch (Throwable t) {
+            setThrowable(t);
+        } finally {
+            runSteps(steps);
         }
     }
 

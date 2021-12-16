@@ -3,6 +3,7 @@ package ezw.pipeline;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -144,8 +145,8 @@ public abstract class Pipelines {
         return new PipeSupplier<>(output, concurrency) {
 
             @Override
-            public O get() {
-                return get.get();
+            public Optional<O> get() {
+                return Optional.ofNullable(get.get());
             }
         };
     }
