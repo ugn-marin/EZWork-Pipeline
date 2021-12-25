@@ -20,7 +20,7 @@ public abstract class Pipelines {
     /**
      * Constructs a pipeline from the supplier into the consumer. Equivalent to:
      * <pre>
-     * Pipeline.from(supplier).into(consumer).build();
+     * Pipeline.from(supplier).into(consumer).build()
      * </pre>
      * @param pipeSupplier The supplier.
      * @param pipeConsumer The consumer.

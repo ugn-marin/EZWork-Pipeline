@@ -5,7 +5,6 @@ import ezw.concurrent.*;
 import ezw.flow.OneShot;
 import ezw.function.UnsafeRunnable;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -19,6 +18,8 @@ public abstract class PipelineWorker implements UnsafeRunnable {
 
     private final boolean internal;
     private final int concurrency;
+    private final Lazy<String> simpleName;
+    private final Lazy<String> string;
     private final Lazy<ExecutorService> executorService;
     private final Lazy<CancellableSubmitter> cancellableSubmitter;
     private final OneShot oneShot = new OneShot();
@@ -29,6 +30,25 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     PipelineWorker(boolean internal, int concurrency) {
         this.internal = internal;
         this.concurrency = concurrency;
+        simpleName = new Lazy<>(() -> {
+            Class<?> clazz = getClass();
+            String simpleName = clazz.getSimpleName();
+            while (simpleName.isEmpty()) {
+                clazz = clazz.getSuperclass();
+                simpleName = clazz.getSimpleName();
+            }
+            if (simpleName.length() > 5 && clazz.getPackage().equals(PipelineWorker.class.getPackage()))
+                simpleName = String.valueOf(simpleName.toCharArray()[4]);
+            else if (internal)
+                simpleName = simpleName.toLowerCase();
+            return simpleName;
+        });
+        string = new Lazy<>(() -> {
+            String string = getName();
+            if (!internal && getConcurrency() != 1)
+                string += String.format("[%d]", getConcurrency());
+            return string;
+        });
         executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
                 String.format("PW %d (%s)", workerPoolNumber.incrementAndGet(), getName()))));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
@@ -52,28 +72,14 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public void run() throws Exception {
         oneShot.check("The pipeline worker instance cannot be reused.");
-        runSteps(List.<UnsafeRunnable>of(() -> {
-                    work();
-                    executorService.maybe(es -> Interruptible.run(() -> Concurrent.join(es)));
-                },
-                this::close,
-                this::internalClose,
-                () -> executorService.maybe(ExecutorService::shutdown),
-                latch::release).iterator());
+        Sugar.runSteps(List.<UnsafeRunnable>of(this::syncWork, this::close, this::internalClose,
+                () -> executorService.maybe(ExecutorService::shutdown), latch::release).iterator(), this::setThrowable);
         Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
     }
 
-    private void runSteps(Iterator<UnsafeRunnable> steps) {
-        if (!steps.hasNext()) {
-            return;
-        }
-        try {
-            steps.next().run();
-        } catch (Throwable t) {
-            setThrowable(t);
-        } finally {
-            runSteps(steps);
-        }
+    private void syncWork() throws InterruptedException {
+        work();
+        executorService.maybe(Interruptible::join);
     }
 
     /**
@@ -118,15 +124,13 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. Cancelling a
      * worker in a pipeline is equivalent to cancelling the pipeline or the worker failing with the provided throwable.
      * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage. Note that
-     *                  cancelling a worker (not a pipeline) with a null may cause dependent workers and indeed the
-     *                  entire pipeline to hang. To stop the pipeline use the <code>stop</code> method.
+     *                  cancelling a worker (not a pipeline) with a null may cause dependent workers and the entire
+     *                  pipeline to hang. To stop the pipeline use the <code>stop</code> method.
      */
     public void cancel(Throwable throwable) {
         setThrowable(throwable);
-        executorService.maybe(es -> {
-            es.shutdown();
-            cancellableSubmitter.maybe(cs -> cancelledWork.addAndGet(cs.cancelSubmitted()));
-        });
+        executorService.maybe(ExecutorService::shutdown);
+        cancellableSubmitter.maybe(cs -> cancelledWork.addAndGet(cs.cancelSubmitted()));
     }
 
     /**
@@ -134,7 +138,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * will throw an InterruptedException.
      */
     public void interrupt() {
-        cancel(new InterruptedException("Controlled interruption."));
+        cancel(new InterruptedException(getName() + " interrupted."));
     }
 
     /**
@@ -164,25 +168,12 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * Returns the name of the worker.
      */
     protected String getName() {
-        Class<?> clazz = getClass();
-        String simpleName = clazz.getSimpleName();
-        while (simpleName.isEmpty()) {
-            clazz = clazz.getSuperclass();
-            simpleName = clazz.getSimpleName();
-        }
-        if (simpleName.length() > 5 && clazz.getPackage().equals(PipelineWorker.class.getPackage()))
-            simpleName = String.valueOf(simpleName.toCharArray()[4]);
-        else if (internal)
-            simpleName = simpleName.toLowerCase();
-        return simpleName;
+        return simpleName.get();
     }
 
     @Override
     public String toString() {
-        String string = getName();
-        if (!internal && getConcurrency() != 1)
-            string += String.format("[%d]", getConcurrency());
-        return string;
+        return string.get();
     }
 
     private static class SilentStop extends Throwable {}
