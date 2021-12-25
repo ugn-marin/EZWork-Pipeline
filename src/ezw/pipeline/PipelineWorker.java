@@ -117,6 +117,8 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         synchronized (executorService) {
             if (this.throwable == null)
                 this.throwable = Objects.requireNonNullElse(throwable, new SilentStop());
+            else if (throwable != null && !this.throwable.equals(throwable))
+                this.throwable.addSuppressed(throwable);
         }
     }
 
