@@ -481,7 +481,7 @@ public class PipelineTest {
             pipeline.run();
             fail("Not interrupted");
         } catch (InterruptedException e) {
-            assertEquals("Controlled interruption.", e.getMessage());
+            assertEquals("Pipeline interrupted.", e.getMessage());
         }
         assertTrue(pipeline.getCancelledWork() > 0);
         assertTrue(five.length() * 5 > charAccumulator.getValue().length());

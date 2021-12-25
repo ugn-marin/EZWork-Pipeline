@@ -18,7 +18,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final SupplyPipe<S> supplyPipe;
     private final boolean isOpen;
     private final Set<PipelineWarning> pipelineWarnings;
-    private final String toString;
+    private final String simpleName;
+    private final String string;
 
     /**
      * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
@@ -47,9 +48,10 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
+        simpleName = isOpen ? "Open pipeline" : "Pipeline";
         int internal = (int) pipelineWorkers.stream().filter(PipelineWorker::isInternal).count();
-        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", isOpen ?
-                "Open pipeline" : "Pipeline", pipelineWorkers.size() - internal, getConcurrency()));
+        StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", simpleName,
+                pipelineWorkers.size() - internal, getConcurrency()));
         var pipelineChart = new PipelineChart(pipelineWorkers, supplyPipe);
         sb.append(pipelineChart);
         pipelineWarnings = pipelineChart.getWarnings();
@@ -60,7 +62,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         for (var warning : pipelineWarnings) {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
-        toString = sb.toString();
+        string = sb.toString();
     }
 
     /**
@@ -97,7 +99,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * Cancels the execution of all internal work, interrupts if possible. Does not wait for work to stop. The pipeline
      * will not throw an exception as a result of this operation. Equivalent to:
      * <pre>
-     * cancel(null);
+     * cancel(null)
      * </pre>
      */
     public void stop() {
@@ -143,12 +145,12 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
     @Override
     protected String getName() {
-        return getClass().getSimpleName();
+        return simpleName;
     }
 
     @Override
     public String toString() {
-        return toString;
+        return string;
     }
 
     /**
@@ -171,7 +173,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         }
 
         private Builder(SupplyPipe<S> supplyPipe) {
-            this.supplyPipe = Objects.requireNonNull(supplyPipe, "Supply pipe cannot be null.");
+            this.supplyPipe = Objects.requireNonNull(supplyPipe, "Supply pipe is null.");
         }
 
         /**
