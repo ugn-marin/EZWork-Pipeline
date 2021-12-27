@@ -73,7 +73,8 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     public void run() throws Exception {
         oneShot.check("The pipeline worker instance cannot be reused.");
         Sugar.runSteps(List.<UnsafeRunnable>of(this::syncWork, this::close, this::internalClose,
-                () -> executorService.maybe(ExecutorService::shutdown), latch::release).iterator(), this::setThrowable);
+                () -> executorService.maybe(ExecutorService::shutdown)).iterator(), this::setThrowable);
+        latch.release();
         Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
     }
 
@@ -117,7 +118,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         synchronized (executorService) {
             if (this.throwable == null)
                 this.throwable = Objects.requireNonNullElse(throwable, new SilentStop());
-            else if (throwable != null && !this.throwable.equals(throwable))
+            else if (throwable != null && !this.throwable.equals(throwable) && !(this.throwable instanceof SilentStop))
                 this.throwable.addSuppressed(throwable);
         }
     }
@@ -127,7 +128,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * worker in a pipeline is equivalent to cancelling the pipeline or the worker failing with the provided throwable.
      * @param throwable The throwable for the worker to throw. If null, nothing will be thrown upon stoppage. Note that
      *                  cancelling a worker (not a pipeline) with a null may cause dependent workers and the entire
-     *                  pipeline to hang. To stop the pipeline use the <code>stop</code> method.
+     *                  pipeline to hang. To stop the pipeline without exception, use the <code>stop</code> method.
      */
     public void cancel(Throwable throwable) {
         setThrowable(throwable);
