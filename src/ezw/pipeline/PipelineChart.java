@@ -84,12 +84,12 @@ class PipelineChart {
             if (element == null)
                 continue;
             int y = matrix.indexOf(element).getY();
-            if (element instanceof Pipe)
-                addPipeOutputs(x, y, (Pipe<?>) element, addColumn);
-            else if (element instanceof Fork)
-                addForkOutputs(x, y, (Fork<?>) element, addColumn);
-            else if (element instanceof OutputWorker)
-                addOutputPipe(x, y, (OutputWorker<?>) element, addColumn);
+            if (element instanceof Pipe pipe)
+                addPipeOutputs(x, y, pipe, addColumn);
+            else if (element instanceof Fork fork)
+                addForkOutputs(x, y, fork, addColumn);
+            else if (element instanceof OutputWorker ow)
+                addOutputPipe(x, y, ow, addColumn);
         }
         if (addColumn.isCalculated())
             next();

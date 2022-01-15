@@ -128,14 +128,14 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     }
 
     private boolean tryPush(IndexedItem<I> indexedItem) throws InterruptedException {
-        if (indexedItem.getIndex() == expectedIndex) {
+        if (indexedItem.index() == expectedIndex) {
             inOrderQueue.put(indexedItem);
             expectedIndex++;
             totalsSum += totalItems() - 1;
         } else {
             if (outOfOrderItems.size() > inPushItems())
                 return false;
-            outOfOrderItems.put(indexedItem.getIndex(), indexedItem);
+            outOfOrderItems.put(indexedItem.index(), indexedItem);
         }
         pushItem(outOfOrderItems.remove(expectedIndex));
         synchronized (lock) {

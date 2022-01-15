@@ -56,11 +56,11 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     }
 
     private void push(IndexedItem<I> indexedItem) throws InterruptedException {
-        long index = indexedItem.getIndex();
+        long index = indexedItem.index();
         boolean push = false;
         IndexedItem<I> next = null;
         synchronized (remainingInputs) {
-            allInputs.computeIfAbsent(indexedItem.getIndex(), i -> new ArrayList<>()).add(indexedItem);
+            allInputs.computeIfAbsent(indexedItem.index(), i -> new ArrayList<>()).add(indexedItem);
             if (!remainingInputs.containsKey(index)) {
                 remainingInputs.put(index, inputs.length - 1);
             } else {
@@ -84,7 +84,7 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     private IndexedItem<I> getNext(long index) {
         remainingInputs.remove(index);
         remainingInputs.notifyAll();
-        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::getItem)
+        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::item)
                 .collect(Collectors.toList())));
     }
 
