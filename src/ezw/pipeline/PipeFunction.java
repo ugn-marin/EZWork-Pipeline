@@ -49,8 +49,8 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
 
     @Override
     protected void work() {
-        input.forEachRemaining(indexedItem -> submit(() -> output.push(new IndexedItem<>(indexedItem.getIndex(),
-                apply(indexedItem.getItem())))));
+        input.forEachRemaining(indexedItem -> submit(() -> output.push(new IndexedItem<>(indexedItem.index(),
+                apply(indexedItem.item())))));
     }
 
     /**

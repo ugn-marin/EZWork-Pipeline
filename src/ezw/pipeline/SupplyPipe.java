@@ -68,6 +68,6 @@ public class SupplyPipe<I> extends Pipe<I> implements SupplyGate<I> {
 
     @Override
     void push(IndexedItem<I> indexedItem) throws InterruptedException {
-        push(indexedItem.getItem());
+        push(indexedItem.item());
     }
 }
