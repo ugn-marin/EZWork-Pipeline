@@ -11,7 +11,7 @@ final class PipeDrain<I> extends PipeConsumer<I> {
     }
 
     @Override
-    protected void work() {
+    protected void work() throws InterruptedException {
         getInput().drain();
     }
 

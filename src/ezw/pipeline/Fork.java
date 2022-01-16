@@ -36,14 +36,14 @@ final class Fork<I> extends PipelineWorker implements InputWorker<I> {
 
     @Override
     protected void work() throws InterruptedException {
-        for (var indexedItem : input) {
+        input.drain(indexedItem -> {
             for (var output : outputs) {
                 if (output instanceof SupplyGate)
                     output.push(indexedItem);
                 else
                     submit(() -> output.push(indexedItem));
             }
-        }
+        });
     }
 
     @Override

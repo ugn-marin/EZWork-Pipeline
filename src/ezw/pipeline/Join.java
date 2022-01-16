@@ -18,7 +18,7 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     private final Pipe<I>[] inputs;
     private final Pipe<I> output;
     private final Reducer<I> reducer;
-    private final Map<Long, List<IndexedItem<I>>> allInputs;
+    private final Map<Long, List<Pipe.IndexedItem<I>>> allInputs;
     private final Map<Long, Integer> remainingInputs;
 
     @SafeVarargs
@@ -47,18 +47,14 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     @Override
     protected void work() {
         for (var input : inputs) {
-            submit(() -> {
-                for (var indexedItem : input) {
-                    push(indexedItem);
-                }
-            });
+            submit(() -> input.drain(this::push));
         }
     }
 
-    private void push(IndexedItem<I> indexedItem) throws InterruptedException {
+    private void push(Pipe.IndexedItem<I> indexedItem) throws InterruptedException {
         long index = indexedItem.index();
         boolean push = false;
-        IndexedItem<I> next = null;
+        Pipe.IndexedItem<I> next = null;
         synchronized (remainingInputs) {
             allInputs.computeIfAbsent(indexedItem.index(), i -> new ArrayList<>()).add(indexedItem);
             if (!remainingInputs.containsKey(index)) {
@@ -81,10 +77,10 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
         output.push(next);
     }
 
-    private IndexedItem<I> getNext(long index) {
+    private Pipe.IndexedItem<I> getNext(long index) {
         remainingInputs.remove(index);
         remainingInputs.notifyAll();
-        return new IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(IndexedItem::item)
+        return new Pipe.IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(Pipe.IndexedItem::item)
                 .collect(Collectors.toList())));
     }
 
