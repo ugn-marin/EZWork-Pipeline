@@ -40,8 +40,8 @@ public abstract class PipeConsumer<I> extends PipelineWorker implements UnsafeCo
     }
 
     @Override
-    protected void work() {
-        input.forEachRemaining(indexedItem -> submit(() -> accept(indexedItem.item())));
+    protected void work() throws InterruptedException {
+        input.drain(indexedItem -> submit(() -> accept(indexedItem.item())));
     }
 
     /**

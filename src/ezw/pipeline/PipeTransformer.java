@@ -50,8 +50,8 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
     }
 
     @Override
-    protected void work() {
-        input.forEachRemaining(indexedItem -> submit(() -> push(apply(indexedItem.item()))));
+    protected void work() throws InterruptedException {
+        input.drain(indexedItem -> submit(() -> push(apply(indexedItem.item()))));
         submit(() -> push(getLastItems()));
     }
 

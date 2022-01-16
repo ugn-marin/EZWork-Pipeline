@@ -2,29 +2,26 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 import ezw.calc.Scale;
-import ezw.concurrent.InterruptedRuntimeException;
 import ezw.concurrent.Interruptible;
+import ezw.function.UnsafeConsumer;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 /**
  * A queue of items moved between pipeline workers.
  * @param <I> The items type.
  */
-public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
+public abstract class Pipe<I> {
     private static final long POLLING_TIMEOUT = 100;
 
     private final int baseCapacity;
     private final String name;
-    private final PipeIterator iterator = new PipeIterator();
     private final ReentrantLock lock = new ReentrantLock(true);
     private final BlockingQueue<IndexedItem<I>> inOrderQueue;
     private final Map<Long, IndexedItem<I>> outOfOrderItems;
@@ -85,7 +82,7 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     }
 
     /**
-     * Returns the number of items pushed into the queue (that passed the in-push and arrangement phases).
+     * Returns the number of items pushed into the queue so far (that passed the in-push and arrangement phases).
      */
     public long getItemsPushed() {
         return expectedIndex;
@@ -161,12 +158,15 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
         endOfInput = true;
     }
 
-    void drain() {
-        forEachRemaining(i -> {});
+    void drain() throws InterruptedException {
+        drain(i -> {});
     }
 
-    void forEachRemaining(Consumer<IndexedItem<I>> action) {
-        iterator.forEachRemaining(action);
+    void drain(UnsafeConsumer<IndexedItem<I>> action) throws InterruptedException {
+        var consumer = action.toConsumer();
+        IndexedItem<I> next;
+        while ((next = take()) != null)
+            consumer.accept(next);
     }
 
     void clear() {
@@ -181,26 +181,13 @@ public abstract class Pipe<I> implements Iterable<IndexedItem<I>> {
     }
 
     @Override
-    public Iterator<IndexedItem<I>> iterator() {
-        return iterator;
-    }
-
-    @Override
     public String toString() {
         return String.format("-<%s:%d>-", name, baseCapacity);
     }
 
-    private class PipeIterator implements Iterator<IndexedItem<I>> {
-        private IndexedItem<I> next;
-
-        @Override
-        public boolean hasNext() throws InterruptedRuntimeException {
-            return (next = Interruptible.call(Pipe.this::take)) != null;
-        }
-
-        @Override
-        public IndexedItem<I> next() {
-            return next;
-        }
-    }
+    /**
+     * An item wrapping containing its assigned index in the scope.
+     * @param <I> The item type.
+     */
+    record IndexedItem<I>(long index, I item) {}
 }
