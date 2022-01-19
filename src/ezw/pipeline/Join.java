@@ -4,7 +4,6 @@ import ezw.Sugar;
 import ezw.function.Reducer;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * An internal worker joining input items from several pipes into one output pipe. Join is a barrier for each index,
@@ -78,10 +77,10 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     }
 
     private Pipe.IndexedItem<I> getNext(long index) {
+        var inputs = allInputs.remove(index).stream().map(Pipe.IndexedItem::item).toList();
         remainingInputs.remove(index);
         remainingInputs.notifyAll();
-        return new Pipe.IndexedItem<>(index, reducer.apply(allInputs.remove(index).stream().map(Pipe.IndexedItem::item)
-                .collect(Collectors.toList())));
+        return new Pipe.IndexedItem<>(index, reducer.apply(inputs));
     }
 
     @Override
