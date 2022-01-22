@@ -1176,7 +1176,17 @@ public class PipelineTest {
     @Test
     void open_star_push_nulls() throws Exception {
         var consumer = new CharAccumulator(new IndexedPipe<>(smallCapacity), 1);
-        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1);
+        var printer = new Printer<>(System.out, new IndexedPipe<Character>(smallCapacity), 1) {
+            @Override
+            public void accept(Character item) throws InterruptedException {
+                if (item == null)
+                    super.accept('.');
+                else if (item == ',' || item == ':')
+                    super.accept('\n');
+                else
+                    super.accept(item);
+            }
+        };
         final var pipeline = Pipelines.star(new SupplyPipe<>(largeCapacity), consumer, printer);
         System.out.println(pipeline);
         Concurrent.run(() -> {
@@ -1295,12 +1305,13 @@ public class PipelineTest {
         System.out.println(pipeline);
         pipeline.run();
         assertEquals(full.length(), joinedAccum.getValue().length());
-        assertEquals("Pipeline of 6 workers on 11 working threads:\n" +
-                "CharSupplier -<SP:10>- fork +<IP:11>- F ----------------<IP:21>-+ join ----<IP:1>- CharAccumulator\n" +
-                "                            +<IP:12>----------------------------+\n" +
-                "                            +<IP:13>- A[6] -------------<IP:31>-+\n" +
-                "                            +<IP:14>- WordsTransformer -<S?P:10>- Printer\n" +
-                "Warning: Unbalanced fork detected.",
+        assertEquals("""
+                        Pipeline of 6 workers on 11 working threads:
+                        CharSupplier -<SP:10>- fork +<IP:11>- F ----------------<IP:21>-+ join ----<IP:1>- CharAccumulator
+                                                    +<IP:12>----------------------------+
+                                                    +<IP:13>- A[6] -------------<IP:31>-+
+                                                    +<IP:14>- WordsTransformer -<S?P:10>- Printer
+                        Warning: Unbalanced fork detected.""",
                 pipeline.toString().replace(System.lineSeparator(), "\n"));
         bottlenecks(pipeline);
     }
