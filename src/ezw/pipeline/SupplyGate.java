@@ -31,6 +31,6 @@ public interface SupplyGate<S> {
      * Wraps this supply gate implementation in an interruptible Consumer.
      */
     default Consumer<S> toConsumer() {
-        return item -> Interruptible.run(() -> push(item));
+        return item -> Interruptible.accept(this::push, item);
     }
 }

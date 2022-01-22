@@ -173,7 +173,7 @@ public abstract class Pipe<I> {
         for (int i = 0; totalItems() > 0; i++) {
             final int waitTime = i * 10 + 1;
             synchronized (lock) {
-                Interruptible.run(() -> lock.wait(waitTime));
+                Interruptible.wait(lock, waitTime);
             }
             inOrderQueue.clear();
             outOfOrderItems.clear();
