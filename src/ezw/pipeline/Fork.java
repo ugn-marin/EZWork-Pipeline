@@ -2,8 +2,8 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * An internal worker sending the input item reference to several output pipes simultaneously. The fork can create a new
@@ -17,8 +17,7 @@ final class Fork<I> extends PipelineWorker implements InputWorker<I> {
 
     @SafeVarargs
     Fork(Pipe<I> input, Pipe<I>... outputs) {
-        super(true, (int) Arrays.stream(Sugar.requireNoneNull(outputs))
-                .filter(p -> !(p instanceof SupplyGate)).count());
+        super(true, (int) Stream.of(Sugar.requireNoneNull(outputs)).filter(p -> !(p instanceof SupplyGate)).count());
         if (outputs.length < 2)
             throw new PipelineConfigurationException("Fork requires at least 2 output pipes.");
         this.input = Objects.requireNonNull(input, "Input pipe is required.");
@@ -48,6 +47,6 @@ final class Fork<I> extends PipelineWorker implements InputWorker<I> {
 
     @Override
     void internalClose() {
-        Arrays.stream(outputs).forEach(Pipe::setEndOfInput);
+        Stream.of(outputs).forEach(Pipe::setEndOfInput);
     }
 }
