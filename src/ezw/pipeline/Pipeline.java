@@ -7,6 +7,7 @@ import ezw.function.Reducer;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A directed acyclic graph (DAG) of concurrent workers connected by pipes. May start at a supplier (closed pipeline) or
@@ -164,7 +165,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
 
         @SafeVarargs
         private Builder(PipeSupplier<S>... pipeSuppliers) {
-            var supplyPipes = Arrays.stream(Sugar.requireFull(pipeSuppliers)).map(PipeSupplier::getOutput)
+            var supplyPipes = Stream.of(Sugar.requireFull(pipeSuppliers)).map(PipeSupplier::getOutput)
                     .collect(Collectors.toSet());
             if (supplyPipes.size() != 1)
                 throw new PipelineConfigurationException("The pipeline suppliers must feed exactly 1 supply pipe.");
@@ -217,8 +218,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> fork(Pipe<I> input, InputWorker<I>... outputs) {
-            return fork(input, Arrays.stream(Sugar.requireFull(outputs)).map(InputWorker::getInput)
-                    .toArray(Pipe[]::new));
+            return fork(input, Stream.of(Sugar.requireFull(outputs)).map(InputWorker::getInput).toArray(Pipe[]::new));
         }
 
         /**
@@ -297,7 +297,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final <I> Builder<S> join(Reducer<I> reducer, Pipe<I> output, OutputWorker<I>... inputs) {
-            return join(reducer, output, Arrays.stream(Sugar.requireFull(inputs)).map(OutputWorker::getOutput)
+            return join(reducer, output, Stream.of(Sugar.requireFull(inputs)).map(OutputWorker::getOutput)
                     .toArray(Pipe[]::new));
         }
 

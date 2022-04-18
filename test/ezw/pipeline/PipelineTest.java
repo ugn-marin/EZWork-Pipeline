@@ -8,13 +8,17 @@ import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -1376,7 +1380,7 @@ public class PipelineTest {
         var builder = Pipeline.from(supplyPipe);
         Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () ->
                 new IndexedPipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
-        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
+        Pipe<Character>[] subPipesOut = Stream.of(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
                 .toArray(Pipe[]::new);
         PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
         for (int i = 0; i < actions.length; i++) {
@@ -1397,7 +1401,7 @@ public class PipelineTest {
             } else {
                 Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new IndexedPipe<T>(pipes.length - 2))
                         .toArray(Pipe[]::new);
-                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
+                Pipe<T>[] subPipesOut = Stream.of(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
                         .toArray(Pipe[]::new);
                 PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
                 for (int i = 0; i < actions.length; i++) {
@@ -1445,7 +1449,7 @@ public class PipelineTest {
         var builder = Pipeline.from(supplyPipe);
         Pipe<Character>[] subPipesIn = Sugar.fill(supplyPipe.getBaseCapacity(), () ->
                 new IndexedPipe<Character>(supplyPipe.getBaseCapacity() - 1)).toArray(Pipe[]::new);
-        Pipe<Character>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
+        Pipe<Character>[] subPipesOut = Stream.of(subPipesIn).map(p -> new IndexedPipe<Character>(p.getBaseCapacity()))
                 .toArray(Pipe[]::new);
         PipeAction<Character>[] actions = new PipeAction[subPipesIn.length];
         for (int i = 0; i < actions.length; i++) {
@@ -1473,7 +1477,7 @@ public class PipelineTest {
             } else {
                 Pipe<T>[] subPipesIn = Sugar.fill(pipes.length - 1, () -> new IndexedPipe<T>(pipes.length - 2))
                         .toArray(Pipe[]::new);
-                Pipe<T>[] subPipesOut = Arrays.stream(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
+                Pipe<T>[] subPipesOut = Stream.of(subPipesIn).map(p -> new IndexedPipe<T>(p.getBaseCapacity()))
                         .toArray(Pipe[]::new);
                 PipeAction<T>[] actions = new PipeAction[subPipesIn.length];
                 for (int i = 0; i < actions.length; i++) {

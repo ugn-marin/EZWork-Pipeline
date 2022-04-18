@@ -7,6 +7,7 @@ import ezw.data.Range;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class PipelineChart {
     private final List<PipelineWorker> pipelineWorkers;
@@ -65,7 +66,7 @@ class PipelineChart {
             }
         }));
         forks = Sugar.instancesOf(pipelineWorkers, Fork.class);
-        if (forks.stream().anyMatch(f -> Arrays.stream(f.getOutputs()).map(Pipe::getBaseCapacity)
+        if (forks.stream().anyMatch(f -> Stream.of(f.getOutputs()).map(Pipe::getBaseCapacity)
                 .collect(Collectors.toSet()).size() > 1))
             warnings.add(PipelineWarning.UNBALANCED_FORK);
         joins = Sugar.instancesOf(pipelineWorkers, Join.class);
@@ -189,12 +190,12 @@ class PipelineChart {
     }
 
     private void forkOutputsLeading() {
-        forks.stream().flatMap(fork -> Arrays.stream(fork.getOutputs())).forEach(pipe ->
+        forks.stream().flatMap(fork -> Stream.of(fork.getOutputs())).forEach(pipe ->
                 matrix.set(matrix.indexOf(pipe), pipe.toString().replace("-<", "+<")));
     }
 
     private void joinInputsTrailing() {
-        joins.stream().flatMap(join -> Arrays.stream(join.getInputs())).forEach(pipe -> {
+        joins.stream().flatMap(join -> Stream.of(join.getInputs())).forEach(pipe -> {
             var index = matrix.indexOf(pipe);
             if (index != null) {
                 StringBuilder sb = new StringBuilder(pipe.toString());
