@@ -113,14 +113,12 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     }
 
     /**
-     * Defines retry behavior to all worker operations. Call prior to execution only.
+     * Defines retry behavior to all internal work. Call prior to execution only.
      * @param retryBuilder A stateless retry builder. A null builder sets the default behavior of no retries.
      */
     public void setRetryBuilder(Retry.Builder retryBuilder) {
         if (cancellableSubmitter.isCalculated())
             throw new IllegalStateException("The pipeline worker is already running.");
-        if (internal && retryBuilder != null)
-            throw new PipelineConfigurationException(getClass().getSimpleName() + " cannot have a retry behavior.");
         this.retryBuilder = retryBuilder;
     }
 
