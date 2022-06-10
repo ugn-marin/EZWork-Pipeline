@@ -2,6 +2,7 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 import ezw.flow.OneShot;
+import ezw.flow.Retry;
 import ezw.function.Reducer;
 
 import java.util.*;
@@ -73,6 +74,12 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     @Override
     public int getConcurrency() {
         return pipelineWorkers.stream().mapToInt(PipelineWorker::getConcurrency).sum();
+    }
+
+    @Override
+    public void setRetryBuilder(Retry.Builder retryBuilder) {
+        pipelineWorkers.stream().filter(Predicate.not(PipelineWorker::isInternal))
+                .forEach(pw -> pw.setRetryBuilder(retryBuilder));
     }
 
     @Override

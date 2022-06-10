@@ -179,15 +179,6 @@ public class PipelineTest {
         } catch (IllegalStateException e) {
             System.out.println(e.getMessage());
         }
-        // Retry
-        try {
-            var pipeline = Pipelines.direct(() -> null, x -> {});
-            System.out.println(pipeline);
-            pipeline.setRetryBuilder(Retry.of(1));
-            fail();
-        } catch (PipelineConfigurationException e) {
-            System.out.println(e.getMessage());
-        }
         // Reuse
         try {
             var pipeline = Pipelines.direct(() -> null, x -> {});
@@ -663,12 +654,12 @@ public class PipelineTest {
                 super.accept(item);
             }
         };
-        charAccumulator.setRetryBuilder(Retry.of(2));
         var printer = new Printer<>(System.out, toPrint, 1);
         Pipeline<Character> pipeline = null;
         try {
             pipeline = Pipelines.star(charSupplier, charAccumulator, printer);
             System.out.println(pipeline);
+            pipeline.setRetryBuilder(Retry.of(2));
             pipeline.run();
             fail("Not failed");
         } catch (NumberFormatException e) {
