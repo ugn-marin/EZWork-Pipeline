@@ -3,15 +3,13 @@ package ezw.pipeline;
 import ezw.Sugar;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
+import ezw.flow.Retry;
 import ezw.function.Reducer;
 import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -179,6 +177,15 @@ public class PipelineTest {
             builder.build();
             fail();
         } catch (IllegalStateException e) {
+            System.out.println(e.getMessage());
+        }
+        // Retry
+        try {
+            var pipeline = Pipelines.direct(() -> null, x -> {});
+            System.out.println(pipeline);
+            pipeline.setRetryBuilder(Retry.of(1));
+            fail();
+        } catch (PipelineConfigurationException e) {
             System.out.println(e.getMessage());
         }
         // Reuse
@@ -656,6 +663,7 @@ public class PipelineTest {
                 super.accept(item);
             }
         };
+        charAccumulator.setRetryBuilder(Retry.of(2));
         var printer = new Printer<>(System.out, toPrint, 1);
         Pipeline<Character> pipeline = null;
         try {
@@ -665,6 +673,7 @@ public class PipelineTest {
             fail("Not failed");
         } catch (NumberFormatException e) {
             assertEquals("My failure message", e.getMessage());
+            Stream.of(e.getSuppressed()).filter(t -> t instanceof NumberFormatException).findFirst().orElseThrow();
         }
         assert pipeline != null;
         assertTrue(pipeline.getCancelledWork() > 0);
