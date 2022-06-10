@@ -3,6 +3,7 @@ package ezw.pipeline;
 import ezw.Sugar;
 import ezw.concurrent.*;
 import ezw.flow.OneShot;
+import ezw.flow.Retry;
 import ezw.function.UnsafeRunnable;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final OneShot oneShot = new OneShot();
     private final Latch latch = new Latch();
     private final AtomicInteger cancelledWork = new AtomicInteger();
+    private Retry.Builder retryBuilder;
     private Throwable throwable;
 
     PipelineWorker(boolean internal, int concurrency) {
@@ -102,12 +104,24 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         cancellableSubmitter.get().submit(() -> {
             Sugar.throwIfNonNull(throwable);
             try {
-                return work.toVoidCallable().call();
+                return retryBuilder != null ? retryBuilder.build(work).call() : work.toVoidCallable().call();
             } catch (Throwable t) {
                 cancel(t);
                 throw t;
             }
         });
+    }
+
+    /**
+     * Defines retry behavior to all worker operations. Call prior to execution only.
+     * @param retryBuilder A stateless retry builder. A null builder sets the default behavior of no retries.
+     */
+    public void setRetryBuilder(Retry.Builder retryBuilder) {
+        if (cancellableSubmitter.isCalculated())
+            throw new IllegalStateException("The pipeline worker is already running.");
+        if (internal && retryBuilder != null)
+            throw new PipelineConfigurationException(getClass().getSimpleName() + " cannot have a retry behavior.");
+        this.retryBuilder = retryBuilder;
     }
 
     Throwable getThrowable() {
