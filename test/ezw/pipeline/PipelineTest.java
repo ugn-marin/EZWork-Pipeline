@@ -881,6 +881,38 @@ public class PipelineTest {
     }
 
     @Test
+    void supplier1_transformer1_drain_completeness() {
+        var supplier = new CharSupplier(five, new SupplyPipe<>(smallCapacity), 1);
+        var transformer = new WordsTransformer(supplier.getOutput(), new SupplyPipe<>(1), 1);
+        try {
+            Pipeline.from(supplier).through(transformer).into(supplier.drain()).build();
+            fail();
+        } catch (PipelineConfigurationException e) {
+            System.out.println(e.getMessage());
+            assertTrue(e.getWarnings().contains(PipelineWarning.COMPLETENESS));
+            assertTrue(e.toString().contains(PipelineWarning.COMPLETENESS.getDescription()));
+        }
+    }
+
+    @Test
+    void function_function_completeness() {
+        var supplier = new CharSupplier(full, new SupplyPipe<>(minimumCapacity), 1);
+        var function1 = Pipelines.function(supplier.getOutput(),
+                new SupplyPipe<Character>(minimumCapacity, Character::isUpperCase), Function.identity());
+        var function2 = Pipelines.function(supplier.getOutput(),
+                new SupplyPipe<Character>(minimumCapacity, Character::isUpperCase), Function.identity());
+        var consumer = new CharAccumulator(function1.getOutput(), 1);
+        try {
+            Pipeline.from(supplier).through(function1, function2).into(consumer).build();
+            fail();
+        } catch (PipelineConfigurationException e) {
+            System.out.println(e.getMessage());
+            assertTrue(e.getWarnings().contains(PipelineWarning.COMPLETENESS));
+            assertTrue(e.toString().contains(PipelineWarning.COMPLETENESS.getDescription()));
+        }
+    }
+
+    @Test
     void conditional_function() throws Exception {
         var supplier = new CharSupplier(full, new SupplyPipe<>(minimumCapacity), 1);
         var function = Pipelines.function(supplier.getOutput(),

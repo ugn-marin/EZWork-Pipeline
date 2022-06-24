@@ -6,6 +6,7 @@ import ezw.data.Matrix;
 import ezw.data.Range;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,6 +24,10 @@ class PipelineChart {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         classifyComponents();
+        if (Sugar.union(outputSuppliers.keySet().stream(), forks.stream().map(Fork::getOutputs).flatMap(Stream::of))
+                .anyMatch(Predicate.not(Sugar.union(inputConsumers.keySet().stream(),
+                        joins.stream().map(Join::getInputs).flatMap(Stream::of)).toList()::contains)))
+            warnings.add(PipelineWarning.COMPLETENESS);
         var suppliers = outputSuppliers.get(supplyPipe);
         int suppliersCount = suppliers != null ? suppliers.size() : 0;
         if (suppliersCount > 0)
