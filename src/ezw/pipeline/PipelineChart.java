@@ -24,9 +24,10 @@ class PipelineChart {
         this.pipelineWorkers = pipelineWorkers;
         this.supplyPipe = supplyPipe;
         classifyComponents();
-        if (Sugar.union(outputSuppliers.keySet().stream(), forks.stream().map(Fork::getOutputs).flatMap(Stream::of))
-                .anyMatch(Predicate.not(Sugar.union(inputConsumers.keySet().stream(),
-                        joins.stream().map(Join::getInputs).flatMap(Stream::of)).toList()::contains)))
+        var inputPipes = Sugar.union(inputConsumers.keySet().stream(), joins.stream().map(Join::getInputs)
+                .flatMap(Stream::of)).collect(Collectors.toSet());
+        if (Sugar.union(outputSuppliers.keySet().stream(), forks.stream().map(Fork::getOutputs).flatMap(Stream::of),
+                Stream.of(supplyPipe)).anyMatch(Predicate.not(inputPipes::contains)))
             warnings.add(PipelineWarning.COMPLETENESS);
         var suppliers = outputSuppliers.get(supplyPipe);
         int suppliersCount = suppliers != null ? suppliers.size() : 0;
