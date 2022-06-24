@@ -12,6 +12,11 @@ public enum PipelineWarning {
      */
     DISCOVERY("Not all workers are discoverable."),
     /**
+     * Indicates that a pipe is not being read from by any worker in the pipeline. This may cause the pipeline to get
+     * stuck once this pipe is filled.
+     */
+    COMPLETENESS("Not all pipes have a target worker."),
+    /**
      * Indicates that a pipe is used in different levels of the flow, creating a potential cycle. This will probably
      * make the pipeline not work properly.
      */
