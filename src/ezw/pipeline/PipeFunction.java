@@ -48,9 +48,9 @@ public abstract class PipeFunction<I, O> extends PipelineWorker implements Unsaf
     }
 
     @Override
-    protected void work() throws InterruptedException {
+    void work() throws InterruptedException {
         input.drain(indexedItem -> submit(() -> output.push(new Pipe.IndexedItem<>(indexedItem.index(),
-                apply(indexedItem.item())))));
+                busyGet(() -> apply(indexedItem.item()))))));
     }
 
     /**

@@ -2,12 +2,15 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 import ezw.concurrent.*;
+import ezw.flow.UtilizationCounter;
 import ezw.flow.OneShot;
 import ezw.flow.Retry;
 import ezw.function.UnsafeRunnable;
+import ezw.function.UnsafeSupplier;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,6 +29,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     private final OneShot oneShot = new OneShot();
     private final Latch latch = new Latch();
     private final AtomicInteger cancelledWork = new AtomicInteger();
+    private UtilizationCounter utilizationCounter;
     private Retry.Builder retryBuilder;
     private Throwable throwable;
 
@@ -47,13 +51,15 @@ public abstract class PipelineWorker implements UnsafeRunnable {
         });
         string = new Lazy<>(() -> {
             String string = getName();
-            if (!internal && getConcurrency() != 1)
-                string += String.format("[%d]", getConcurrency());
+            if (!internal && concurrency != 1)
+                string += String.format("[%d]", concurrency);
             return string;
         });
         executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
                 String.format("PW %d (%s)", workerPoolNumber.incrementAndGet(), getName()))));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
+        if (!internal)
+            utilizationCounter = new UtilizationCounter(concurrency);
     }
 
     boolean isInternal() {
@@ -64,7 +70,7 @@ public abstract class PipelineWorker implements UnsafeRunnable {
      * Returns the concurrency level of the worker.
      */
     protected int getConcurrency() {
-        return internal ? 0 : concurrency;
+        return concurrency;
     }
 
     /**
@@ -74,8 +80,15 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     @Override
     public void run() throws Exception {
         oneShot.check("The pipeline worker instance cannot be reused.");
-        Sugar.runSteps(List.<UnsafeRunnable>of(this::syncWork, this::close, this::internalClose,
-                () -> executorService.maybe(ExecutorService::shutdown)).iterator(), this::setThrowable);
+        var optionalUtilizationCounter = Optional.ofNullable(utilizationCounter);
+        Sugar.runSteps(List.<UnsafeRunnable>of(
+                () -> optionalUtilizationCounter.ifPresent(UtilizationCounter::start),
+                this::syncWork,
+                this::close,
+                this::internalClose,
+                () -> optionalUtilizationCounter.ifPresent(UtilizationCounter::stop),
+                () -> executorService.maybe(ExecutorService::shutdown)).iterator(),
+                this::setThrowable);
         latch.release();
         Sugar.throwIfNonNull(throwable instanceof SilentStop ? null : throwable);
     }
@@ -110,6 +123,25 @@ public abstract class PipelineWorker implements UnsafeRunnable {
                 throw t;
             }
         });
+    }
+
+    /**
+     * Executes internal work in a busy context.
+     */
+    void busyRun(UnsafeRunnable work) throws Exception {
+        busyGet(work.toVoidCallable()::call);
+    }
+
+    /**
+     * Executes internal work in a busy context.
+     */
+    <T> T busyGet(UnsafeSupplier<T> work) throws Exception {
+        try {
+            utilizationCounter.busy();
+            return work.get();
+        } finally {
+            utilizationCounter.idle();
+        }
     }
 
     /**
@@ -165,10 +197,24 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     }
 
     /**
+     * Returns the threads utilization at the moment.
+     */
+    public double getCurrentUtilization() {
+        return utilizationCounter.getCurrentUtilization();
+    }
+
+    /**
+     * Returns the average threads utilization over time up to this point, or while work was being done.
+     */
+    public double getAverageUtilization() {
+        return utilizationCounter.getAverageUtilization();
+    }
+
+    /**
      * Submits all internal work.
      * @throws InterruptedException If interrupted.
      */
-    protected abstract void work() throws InterruptedException;
+    abstract void work() throws InterruptedException;
 
     /**
      * Called automatically when the worker is done executing or failed.

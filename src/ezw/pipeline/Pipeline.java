@@ -17,6 +17,7 @@ import java.util.stream.Stream;
  */
 public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final List<PipelineWorker> pipelineWorkers;
+    private final List<PipelineWorker> externalWorkers;
     private final SupplyPipe<S> supplyPipe;
     private final boolean isOpen;
     private final Set<PipelineWarning> pipelineWarnings;
@@ -51,9 +52,9 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
         this.supplyPipe = supplyPipe;
         isOpen = pipelineWorkers.stream().noneMatch(pw -> pw instanceof PipeSupplier);
         simpleName = isOpen ? "Open pipeline" : "Pipeline";
-        int internal = (int) pipelineWorkers.stream().filter(PipelineWorker::isInternal).count();
+        externalWorkers = pipelineWorkers.stream().filter(Predicate.not(PipelineWorker::isInternal)).toList();
         StringBuilder sb = new StringBuilder(String.format("%s of %d workers on %d working threads:%n", simpleName,
-                pipelineWorkers.size() - internal, getConcurrency()));
+                externalWorkers.size(), getConcurrency()));
         var pipelineChart = new PipelineChart(pipelineWorkers, supplyPipe);
         sb.append(pipelineChart);
         pipelineWarnings = pipelineChart.getWarnings();
@@ -73,13 +74,12 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     @Override
     public int getConcurrency() {
-        return pipelineWorkers.stream().mapToInt(PipelineWorker::getConcurrency).sum();
+        return externalWorkers.stream().mapToInt(PipelineWorker::getConcurrency).sum();
     }
 
     @Override
     public void setRetryBuilder(Retry.Builder retryBuilder) {
-        pipelineWorkers.stream().filter(Predicate.not(PipelineWorker::isInternal))
-                .forEach(pw -> pw.setRetryBuilder(retryBuilder));
+        externalWorkers.forEach(pw -> pw.setRetryBuilder(retryBuilder));
     }
 
     @Override
@@ -88,7 +88,19 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
-    protected void work() {
+    public double getCurrentUtilization() {
+        return externalWorkers.stream().mapToDouble(pw -> pw.getCurrentUtilization() * pw.getConcurrency()).sum() /
+                getConcurrency();
+    }
+
+    @Override
+    public double getAverageUtilization() {
+        return externalWorkers.stream().mapToDouble(pw -> pw.getAverageUtilization() * pw.getConcurrency()).sum() /
+                getConcurrency();
+    }
+
+    @Override
+    void work() {
         pipelineWorkers.forEach(this::submit);
     }
 
@@ -142,13 +154,12 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Returns a set of input workers which have an input pipe average load of over 0.9, during or after the execution.
+     * Returns a set of input workers which have an input pipe average load of over 95%, during or after the execution.
      * An empty set means the supplier(s) probably hadn't subjected the pipeline to its potential throughput.
      */
     public Set<InputWorker<?>> getBottlenecks() {
-        return Sugar.<InputWorker<?>>instancesOf(pipelineWorkers, InputWorker.class).stream()
-                .filter(iw -> !((PipelineWorker) iw).isInternal() && iw.getInput().getAverageLoad() > 0.9)
-                .collect(Collectors.toSet());
+        return Sugar.<InputWorker<?>>instancesOf(externalWorkers, InputWorker.class).stream()
+                .filter(iw -> iw.getInput().getAverageLoad() > 0.95).collect(Collectors.toSet());
     }
 
     @Override

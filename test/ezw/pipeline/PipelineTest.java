@@ -62,6 +62,7 @@ public class PipelineTest {
         var bottlenecks = pipeline.getBottlenecks();
         if (!bottlenecks.isEmpty())
             System.err.println("Bottlenecks: " + bottlenecks);
+        System.out.println("Utilization: " + pipeline.getAverageUtilization());
     }
 
     private static void assertBottleneck(InputWorker<?> expected, Pipeline<?> pipeline) {
@@ -1255,26 +1256,6 @@ public class PipelineTest {
         System.out.println(pipeline);
         pipeline.run();
         assertEquals(5, counter.get());
-        bottlenecks(pipeline);
-    }
-
-    @Test
-    void counter_actions_disable() throws Exception {
-        var counter = new AtomicInteger();
-        var supplier = Pipelines.supplier(counter);
-        var builder = Pipeline.from(supplier);
-        var a1 = Pipelines.action(new IndexedPipe<>(1), new IndexedPipe<>(10), AtomicInteger::incrementAndGet);
-        var a2 = Pipelines.action(new IndexedPipe<>(2), new IndexedPipe<>(2), AtomicInteger::incrementAndGet);
-        var a3 = Pipelines.action(AtomicInteger::incrementAndGet);
-        builder.fork(supplier, a1, a2, a3).through(a1, a2, a3);
-        var c1 = Pipelines.consumer(AtomicInteger::incrementAndGet);
-        var c2 = Pipelines.consumer(a3.getOutput(), AtomicInteger::incrementAndGet);
-        var pipeline = builder.join(c1, a1, a2).into(c1, c2).build(PipelineWarning.UNBALANCED_FORK);
-        System.out.println(pipeline);
-        assertTrue(a2.setEnabled(false));
-        assertTrue(a3.setEnabled(false));
-        pipeline.run();
-        assertEquals(3, counter.get());
         bottlenecks(pipeline);
     }
 

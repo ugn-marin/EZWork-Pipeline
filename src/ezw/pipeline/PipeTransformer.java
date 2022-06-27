@@ -50,9 +50,9 @@ public abstract class PipeTransformer<I, O> extends PipelineWorker implements Un
     }
 
     @Override
-    protected void work() throws InterruptedException {
-        input.drain(indexedItem -> submit(() -> push(apply(indexedItem.item()))));
-        submit(() -> push(getLastItems()));
+    void work() throws InterruptedException {
+        input.drain(indexedItem -> submit(() -> push(busyGet(() -> apply(indexedItem.item())))));
+        submit(() -> push(busyGet(this::getLastItems)));
     }
 
     private void push(Collection<O> transformedItems) throws InterruptedException {

@@ -44,7 +44,7 @@ final class Join<I> extends PipelineWorker implements OutputWorker<I> {
     }
 
     @Override
-    protected void work() {
+    void work() {
         for (var input : inputs) {
             submit(() -> input.drain(this::push));
         }
