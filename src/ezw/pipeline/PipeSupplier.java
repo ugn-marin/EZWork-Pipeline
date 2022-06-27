@@ -43,8 +43,8 @@ public abstract class PipeSupplier<O> extends PipelineWorker implements UnsafeSu
     }
 
     @Override
-    protected void work() {
-        Sugar.repeat(getConcurrency(), () -> submit(() -> Sugar.acceptWhilePresent(this::get, this::push)));
+    void work() {
+        Sugar.repeat(getConcurrency(), () -> submit(() -> Sugar.acceptWhilePresent(() -> busyGet(this), this::push)));
     }
 
     /**

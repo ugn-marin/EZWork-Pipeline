@@ -62,6 +62,7 @@ public class PipelineTest {
         var bottlenecks = pipeline.getBottlenecks();
         if (!bottlenecks.isEmpty())
             System.err.println("Bottlenecks: " + bottlenecks);
+        System.out.println("Utilization: " + pipeline.getAverageUtilization());
     }
 
     private static void assertBottleneck(InputWorker<?> expected, Pipeline<?> pipeline) {
