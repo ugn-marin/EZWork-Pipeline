@@ -191,10 +191,8 @@ class PipelineChart {
 
     private void fillComponents() {
         componentsMatrix = new Matrix<>(matrix);
-        componentsMatrix.getBlock().forEach(coordinates -> {
-            if (componentsMatrix.get(coordinates) instanceof String)
-                componentsMatrix.set(coordinates, null);
-        });
+        componentsMatrix.getBlock().stream().filter(coordinates -> componentsMatrix.get(coordinates) instanceof String)
+                .forEach(coordinates -> componentsMatrix.set(coordinates, null));
     }
 
     private void raiseRange(Range range, int y) {
