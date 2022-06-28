@@ -157,7 +157,8 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     /**
-     * Returns a matrix of the pipeline components (workers and pipes) according to their position in the pipeline.
+     * Returns a matrix of the pipeline components (workers and pipes) according to their position in the pipeline as
+     * discovered by the validation. Can be used for monitoring visualization - align objects according to the matrix.
      */
     public Matrix<Object> getComponentsMatrix() {
         return componentsMatrix;
