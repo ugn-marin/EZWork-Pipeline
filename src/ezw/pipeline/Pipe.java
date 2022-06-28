@@ -48,8 +48,15 @@ public abstract class Pipe<I> {
     /**
      * Returns the base capacity.
      */
-    protected int getBaseCapacity() {
+    protected final int getBaseCapacity() {
         return baseCapacity;
+    }
+
+    /**
+     * Returns the name of the pipe.
+     */
+    public String getName() {
+        return name;
     }
 
     /**
@@ -182,7 +189,7 @@ public abstract class Pipe<I> {
 
     @Override
     public String toString() {
-        return String.format("-<%s:%d>-", name, baseCapacity);
+        return String.format("-<%s:%d>-", getName(), baseCapacity);
     }
 
     /**

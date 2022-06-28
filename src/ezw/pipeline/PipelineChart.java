@@ -19,6 +19,7 @@ class PipelineChart {
     private final Map<Pipe<?>, List<InputWorker<?>>> inputConsumers = new HashMap<>();
     private Set<Fork<?>> forks;
     private Set<Join<?>> joins;
+    private Matrix<Object> componentsMatrix = new Matrix<>();
 
     PipelineChart(List<PipelineWorker> pipelineWorkers, SupplyPipe<?> supplyPipe) {
         this.pipelineWorkers = pipelineWorkers;
@@ -37,6 +38,7 @@ class PipelineChart {
         next();
         if (!matrix.isEmpty()) {
             pack();
+            fillComponents();
             if (suppliersCount != 1)
                 supplyLeading(suppliersCount > 1);
             forkOutputsLeading();
@@ -187,6 +189,14 @@ class PipelineChart {
         matrix.packRows();
     }
 
+    private void fillComponents() {
+        componentsMatrix = new Matrix<>(matrix);
+        componentsMatrix.getBlock().forEach(coordinates -> {
+            if (componentsMatrix.get(coordinates) instanceof String)
+                componentsMatrix.set(coordinates, null);
+        });
+    }
+
     private void raiseRange(Range range, int y) {
         range.forEach(x -> matrix.swap(x, y, x, y - 1));
     }
@@ -214,6 +224,10 @@ class PipelineChart {
 
     Set<PipelineWarning> getWarnings() {
         return warnings;
+    }
+
+    Matrix<Object> getComponentsMatrix() {
+        return componentsMatrix;
     }
 
     @Override
