@@ -20,6 +20,7 @@ public class Printer<I> extends PipeConsumer<I> {
 
     @Override
     protected void close() {
+        ps.println();
         ps.flush();
     }
 }

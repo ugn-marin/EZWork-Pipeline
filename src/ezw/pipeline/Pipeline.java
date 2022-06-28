@@ -1,6 +1,7 @@
 package ezw.pipeline;
 
 import ezw.Sugar;
+import ezw.data.Matrix;
 import ezw.flow.OneShot;
 import ezw.flow.Retry;
 import ezw.function.Reducer;
@@ -23,6 +24,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final Set<PipelineWarning> pipelineWarnings;
     private final String simpleName;
     private final String string;
+    private final Matrix<Object> componentsMatrix;
 
     /**
      * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
@@ -66,6 +68,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
             sb.append(System.lineSeparator()).append("Warning: ").append(warning.getDescription());
         }
         string = sb.toString();
+        componentsMatrix = pipelineChart.getComponentsMatrix();
     }
 
     /**
@@ -151,6 +154,14 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public Set<PipelineWarning> getWarnings() {
         return new LinkedHashSet<>(pipelineWarnings);
+    }
+
+    /**
+     * Returns a matrix of the pipeline components (workers and pipes) according to their position in the pipeline as
+     * discovered by the validation. Can be used for monitoring visualization - align objects according to the matrix.
+     */
+    public Matrix<Object> getComponentsMatrix() {
+        return componentsMatrix;
     }
 
     /**

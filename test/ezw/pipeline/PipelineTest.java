@@ -1,9 +1,11 @@
 package ezw.pipeline;
 
 import ezw.Sugar;
+import ezw.calc.Scale;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.flow.Retry;
+import ezw.function.Match;
 import ezw.function.Reducer;
 import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
@@ -32,6 +34,7 @@ public class PipelineTest {
     private static final int mediumCapacity = 100;
     private static final int largeCapacity = 1000;
     private static final Random random = new Random();
+    private static final Scale utilizationScale = new Scale(3);
 
     private AtomicInteger functionsRun;
     private AtomicInteger actionsRun;
@@ -62,7 +65,7 @@ public class PipelineTest {
         var bottlenecks = pipeline.getBottlenecks();
         if (!bottlenecks.isEmpty())
             System.err.println("Bottlenecks: " + bottlenecks);
-        System.out.println("Utilization: " + pipeline.getAverageUtilization());
+        System.out.println("Utilization: " + utilizationScale.apply(pipeline.getAverageUtilization()));
     }
 
     private static void assertBottleneck(InputWorker<?> expected, Pipeline<?> pipeline) {
@@ -1263,7 +1266,7 @@ public class PipelineTest {
     void split() throws Exception {
         final var even = new StringBuilder();
         final var odd = new StringBuilder();
-        final var pipeline = Pipelines.<Integer>split(n -> n % 2 == 0, even::append, odd::append);
+        final var pipeline = Pipelines.<Integer>split(new Match<>(n -> n % 2 == 0, even::append, odd::append));
         System.out.println(pipeline);
         Concurrent.run(() -> {
             for (int i = 0; i < 10; i++) {

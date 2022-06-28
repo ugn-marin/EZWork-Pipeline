@@ -1,5 +1,7 @@
 package ezw.pipeline;
 
+import ezw.function.Match;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -99,10 +101,20 @@ public abstract class Pipelines {
 
     /**
      * Constructs an open star pipeline forking from a supply pipe into the two consumers by the predicate result.
+     * @param match A match consumer containing the predicate and respective consumers.
+     * @param <I> The items type.
+     * @return The pipeline.
+     */
+    public static <I> Pipeline<I> split(Match<I> match) {
+        return split(match.predicate(), match.positive(), match.negative());
+    }
+
+    /**
+     * Constructs an open star pipeline forking from a supply pipe into the two consumers by the predicate result.
      * @param predicate The predicate by which to accept the items.
      * @param acceptTrue The consumer for items passing the predicate.
      * @param acceptFalse The consumer for items not passing the predicate.
-     * @param <I> The items type
+     * @param <I> The items type.
      * @return The pipeline.
      */
     public static <I> Pipeline<I> split(Predicate<I> predicate, Consumer<I> acceptTrue, Consumer<I> acceptFalse) {
