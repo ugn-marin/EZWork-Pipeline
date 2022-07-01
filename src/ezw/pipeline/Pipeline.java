@@ -24,7 +24,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     private final Set<PipelineWarning> pipelineWarnings;
     private final String simpleName;
     private final String string;
-    private final Matrix<Object> componentsMatrix;
+    private final Matrix<PipelineComponent> componentsMatrix;
 
     /**
      * Constructs a builder of a closed pipeline, and attaches the suppliers provided.
@@ -161,7 +161,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * discovered by the validation. Can be used for monitoring visualization - align objects according to the matrix.
      * Pipelines with certain construction warnings may return null.
      */
-    public Matrix<Object> getComponentsMatrix() {
+    public Matrix<PipelineComponent> getComponentsMatrix() {
         return componentsMatrix;
     }
 
@@ -175,7 +175,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return simpleName;
     }
 
