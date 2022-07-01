@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * An unsafe runnable executing in a pipeline.
  */
-public abstract class PipelineWorker implements UnsafeRunnable {
+public abstract class PipelineWorker implements PipelineComponent, UnsafeRunnable {
     private static final AtomicInteger workerPoolNumber = new AtomicInteger();
 
     private final boolean internal;
@@ -62,14 +62,25 @@ public abstract class PipelineWorker implements UnsafeRunnable {
             utilizationCounter = new UtilizationCounter(concurrency);
     }
 
-    boolean isInternal() {
+    /**
+     * Returns true if the worker is an internal pipeline worker, else false.
+     */
+    public final boolean isInternal() {
         return internal;
     }
 
     /**
-     * Returns the concurrency level of the worker.
+     * Returns the name of the worker.
      */
-    protected int getConcurrency() {
+    @Override
+    public String getName() {
+        return simpleName.get();
+    }
+
+    /**
+     * Returns the defined concurrency level of the worker.
+     */
+    public int getConcurrency() {
         return concurrency;
     }
 
@@ -224,13 +235,6 @@ public abstract class PipelineWorker implements UnsafeRunnable {
     protected void close() throws Exception {}
 
     void internalClose() {}
-
-    /**
-     * Returns the name of the worker.
-     */
-    protected String getName() {
-        return simpleName.get();
-    }
 
     @Override
     public String toString() {

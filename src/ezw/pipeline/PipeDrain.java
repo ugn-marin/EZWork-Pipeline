@@ -19,7 +19,7 @@ final class PipeDrain<I> extends PipeConsumer<I> {
     public void accept(I item) {}
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "x";
     }
 }

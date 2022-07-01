@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * A queue of items moved between pipeline workers.
  * @param <I> The items type.
  */
-public abstract class Pipe<I> {
+public abstract class Pipe<I> implements PipelineComponent {
     private static final long POLLING_TIMEOUT = 100;
 
     private final int baseCapacity;
@@ -48,13 +48,14 @@ public abstract class Pipe<I> {
     /**
      * Returns the base capacity.
      */
-    protected final int getBaseCapacity() {
+    public final int getBaseCapacity() {
         return baseCapacity;
     }
 
     /**
      * Returns the name of the pipe.
      */
+    @Override
     public String getName() {
         return name;
     }
@@ -161,7 +162,7 @@ public abstract class Pipe<I> {
      * Sets the pipe end-of-input flag, indicating there's no more items to poll from it. Pushing items after setting
      * the flag will result in an exception.
      */
-    public void setEndOfInput() {
+    void setEndOfInput() {
         endOfInput = true;
     }
 
