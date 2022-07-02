@@ -221,11 +221,11 @@ class PipelineChart {
     }
 
     Set<PipelineWarning> getWarnings() {
-        return warnings;
+        return Collections.unmodifiableSet(warnings);
     }
 
     Matrix<PipelineComponent> getComponentsMatrix() {
-        return componentsMatrix;
+        return componentsMatrix != null ? Matrix.unmodifiableCopy(componentsMatrix) : null;
     }
 
     @Override

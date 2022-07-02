@@ -153,7 +153,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      * Returns the warnings detected on the pipeline construction.
      */
     public Set<PipelineWarning> getWarnings() {
-        return new LinkedHashSet<>(pipelineWarnings);
+        return pipelineWarnings;
     }
 
     /**
