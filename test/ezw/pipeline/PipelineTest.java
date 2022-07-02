@@ -1333,6 +1333,7 @@ public class PipelineTest {
                                                     +<IP:14>- WordsTransformer -<S?P:10>- Printer
                         Warning: Unbalanced fork detected.""",
                 pipeline.toString().replace(System.lineSeparator(), "\n"));
+        assertTrue(pipeline.getComponentsMatrix().size().equals(9, 4));
         bottlenecks(pipeline);
     }
 
