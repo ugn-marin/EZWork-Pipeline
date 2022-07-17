@@ -7,6 +7,7 @@ import ezw.flow.Retry;
 import ezw.function.Reducer;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -163,6 +164,26 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
      */
     public Matrix<PipelineComponent> getComponentsMatrix() {
         return componentsMatrix;
+    }
+
+    /**
+     * Returns the components matrix mapped using the mapping functions provided, according to their type.
+     * @param pipeFunction The function mapping the pipes.
+     * @param pipelineWorkerFunction The function mapping the workers.
+     * @param <T> The type the components are mapped to.
+     * @return An unmodifiable matrix of the mapping results, or null if the components matrix is null.
+     */
+    public <T> Matrix<T> getComponentsMatrix(Function<Pipe<?>, T> pipeFunction,
+                                             Function<PipelineWorker, T> pipelineWorkerFunction) {
+        Objects.requireNonNull(pipeFunction, "Pipe function is null.");
+        Objects.requireNonNull(pipelineWorkerFunction, "Pipeline worker function is null.");
+        return componentsMatrix == null ? null : Matrix.unmodifiableCopy(componentsMatrix.map(component -> {
+            if (component instanceof Pipe<?> pipe)
+                return pipeFunction.apply(pipe);
+            else if (component instanceof PipelineWorker pw)
+                return pipelineWorkerFunction.apply(pw);
+            return null;
+        }));
     }
 
     /**

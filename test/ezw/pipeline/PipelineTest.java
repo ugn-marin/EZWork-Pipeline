@@ -11,7 +11,10 @@ import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
 import org.junit.jupiter.api.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +69,10 @@ public class PipelineTest {
         if (!bottlenecks.isEmpty())
             System.err.println("Bottlenecks: " + bottlenecks);
         System.out.println("Utilization: " + utilizationScale.apply(pipeline.getAverageUtilization()));
+        var utilization = pipeline.getComponentsMatrix(
+                pipe -> String.format("<%s>", utilizationScale.apply(pipe.getAverageLoad())),
+                pw -> utilizationScale.apply(pw.getAverageUtilization()).toString());
+        System.out.println(utilization);
     }
 
     private static void assertBottleneck(InputWorker<?> expected, Pipeline<?> pipeline) {
