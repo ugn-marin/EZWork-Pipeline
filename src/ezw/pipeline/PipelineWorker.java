@@ -211,14 +211,14 @@ public abstract class PipelineWorker implements PipelineComponent, UnsafeRunnabl
      * Returns the threads utilization at the moment.
      */
     public double getCurrentUtilization() {
-        return utilizationCounter.getCurrentUtilization();
+        return internal ? 0 : utilizationCounter.getCurrentUtilization();
     }
 
     /**
      * Returns the average threads utilization over time up to this point, or while work was being done.
      */
     public double getAverageUtilization() {
-        return utilizationCounter.getAverageUtilization();
+        return internal ? 0 : utilizationCounter.getAverageUtilization();
     }
 
     /**
