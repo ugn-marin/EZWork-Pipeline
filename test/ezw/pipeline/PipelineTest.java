@@ -5,7 +5,7 @@ import ezw.calc.Scale;
 import ezw.concurrent.Concurrent;
 import ezw.concurrent.Interruptible;
 import ezw.flow.Retry;
-import ezw.function.Match;
+import ezw.function.ConditionalConsumer;
 import ezw.function.Reducer;
 import ezw.function.UnsafeRunnable;
 import ezw.pipeline.workers.*;
@@ -1273,7 +1273,7 @@ public class PipelineTest {
     void split() throws Exception {
         final var even = new StringBuilder();
         final var odd = new StringBuilder();
-        final var pipeline = Pipelines.<Integer>split(new Match<>(n -> n % 2 == 0, even::append, odd::append));
+        final var pipeline = Pipelines.<Integer>split(new ConditionalConsumer<>(n -> n % 2 == 0, even::append, odd::append));
         System.out.println(pipeline);
         Concurrent.run(() -> {
             for (int i = 0; i < 10; i++) {
