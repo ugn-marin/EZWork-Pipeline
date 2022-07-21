@@ -1,6 +1,6 @@
 package ezw.pipeline;
 
-import ezw.function.Match;
+import ezw.function.ConditionalConsumer;
 
 import java.util.Collection;
 import java.util.Map;
@@ -101,12 +101,12 @@ public abstract class Pipelines {
 
     /**
      * Constructs an open star pipeline forking from a supply pipe into the two consumers by the predicate result.
-     * @param match A match consumer containing the predicate and respective consumers.
+     * @param conditionalConsumer A conditional consumer containing the predicate and respective consumers.
      * @param <I> The items type.
      * @return The pipeline.
      */
-    public static <I> Pipeline<I> split(Match<I> match) {
-        return split(match.predicate(), match.positive(), match.negative());
+    public static <I> Pipeline<I> split(ConditionalConsumer<I> conditionalConsumer) {
+        return split(conditionalConsumer.predicate(), conditionalConsumer.positive(), conditionalConsumer.negative());
     }
 
     /**
