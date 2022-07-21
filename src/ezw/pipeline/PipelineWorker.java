@@ -2,9 +2,9 @@ package ezw.pipeline;
 
 import ezw.Sugar;
 import ezw.concurrent.*;
-import ezw.flow.UtilizationCounter;
 import ezw.flow.OneShot;
 import ezw.flow.Retry;
+import ezw.flow.UtilizationCounter;
 import ezw.function.UnsafeRunnable;
 import ezw.function.UnsafeSupplier;
 
@@ -55,8 +55,8 @@ public abstract class PipelineWorker implements PipelineComponent, UnsafeRunnabl
                 string += String.format("[%d]", concurrency);
             return string;
         });
-        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, Concurrent.namedThreadFactory(
-                String.format("PW %d (%s)", workerPoolNumber.incrementAndGet(), getName()))));
+        executorService = new Lazy<>(() -> new BlockingThreadPoolExecutor(concurrency, String.format("PW %d (%s)",
+                workerPoolNumber.incrementAndGet(), getName())));
         cancellableSubmitter = new Lazy<>(() -> new CancellableSubmitter(executorService.get()));
         if (!internal)
             utilizationCounter = new UtilizationCounter(concurrency);
