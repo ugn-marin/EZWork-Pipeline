@@ -4,7 +4,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * An exception thrown by the pipeline building logic, indicating an illegal pipeline build.
+ * An exception thrown by the pipeline building logic, indicating an illegal pipeline build. May be thrown as a result
+ * of a straight forward pipeline building rules violation, or one or more warnings that were not marked as allowed.
  */
 public class PipelineConfigurationException extends RuntimeException {
     private Set<PipelineWarning> pipelineWarnings;

@@ -4,7 +4,7 @@ import ezw.Sugar;
 import ezw.data.Matrix;
 import ezw.flow.OneShot;
 import ezw.flow.Retry;
-import ezw.function.Converter;
+import ezw.function.TypedConverter;
 import ezw.function.Reducer;
 
 import java.util.*;
@@ -178,7 +178,7 @@ public final class Pipeline<S> extends PipelineWorker implements SupplyGate<S> {
                                              Function<PipelineWorker, T> pipelineWorkerFunction) {
         Objects.requireNonNull(pipeFunction, "Pipe function is null.");
         Objects.requireNonNull(pipelineWorkerFunction, "Pipeline worker function is null.");
-        return componentsMatrix == null ? null : Matrix.unmodifiableCopy(componentsMatrix.map(new Converter<>(
+        return componentsMatrix == null ? null : Matrix.unmodifiableCopy(componentsMatrix.map(new TypedConverter<>(
                 Map.of(Pipe.class, pipeFunction, PipelineWorker.class, pipelineWorkerFunction))));
     }
 
